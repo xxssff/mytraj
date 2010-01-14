@@ -92,7 +92,7 @@ public class RandomDataGenerator {
 	public void simNumSeqsToFile(String dirname, int seqLength, int roadSize) {
 
 		int[] numSeqs = { 2000, 4000, 6000, 8000, 10000 }; // numseqs to sim
-
+//		int [] numSeqs={2000};
 		for (int numSeq : numSeqs) {
 			System.out.println("simNumSeqs on " + numSeq);
 			String filename = dirname + "syn" + numSeq + ".txt";
@@ -104,9 +104,10 @@ public class RandomDataGenerator {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String dirname = "D:/Research/trajectory indexing/experiments/";
-		int roadSize = 1000000; // 1 million roads
-		int seqLength = 2000;
+		//Destination directory name
+		String dirname = "/home/zhoujian/traj/data1/";
+		int roadSize = 1000000; // 1 million roads size
+		int seqLength = 60000; //length of every trajectory sequence
 		RandomDataGenerator gen = new RandomDataGenerator();
 		gen.simNumSeqsToFile(dirname, seqLength, roadSize);
 	}

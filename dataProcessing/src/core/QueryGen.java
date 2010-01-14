@@ -17,10 +17,12 @@ public class QueryGen {
 		long seed1 = 123854398;
 		long seed2 = 898720792;
 		int totalLine = 999;
-		int numQueries = 100; // number of queries to generate
-		int numSeq = 100; // num of road ids to take
-		String filename = "D:/research/traj_indexing/Traj_Olden_1k_3k.txt";
-		String outfile = "D:/research/traj_indexing/Traj_Olden_1k_3k_q100.txt";
+		int numQueries = 50; // number of queries to generate; pre-fixed
+		int numSeq = 24000; // num of road ids to take; length of query string
+		String filename = "D:/research/traj_indexing/Traj_Olden_1k_3k.txt"; // input
+																			// file
+		String outfile = "D:/research/traj_indexing/Traj_Olden_1k_3k_q100.txt"; // output
+																				// file
 		BufferedReader br = new BufferedReader(new FileReader(filename));
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outfile));
 		Random rand = new Random(seed1);
@@ -45,9 +47,9 @@ public class QueryGen {
 					st.nextElement();
 				}
 				// start writing
-//				String str2Write = linenumber + "\t";
-				String str2Write="";
-				for (int ntoken=0; ntoken<numSeq; ntoken++){
+				// String str2Write = linenumber + "\t";
+				String str2Write = "";
+				for (int ntoken = 0; ntoken < numSeq; ntoken++) {
 					str2Write += st.nextToken() + " ";
 				}
 				bw.append(str2Write);
