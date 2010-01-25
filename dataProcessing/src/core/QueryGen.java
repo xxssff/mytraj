@@ -9,7 +9,12 @@ import java.util.StringTokenizer;
 
 /**
  * 
- * @author Xiaohui Assumed line start from number 0
+ * @author Xiaohui Assumed line start from number 0 Read command line arguments <br>
+ *         arg1: number of queries <br>
+ *         arg2: length per query <br>
+ *         arg3: input file name <br>
+ *         arg4: output filename <br>
+ * 
  */
 public class QueryGen {
 	public static void main(String[] args) throws Exception {
@@ -17,13 +22,13 @@ public class QueryGen {
 		long seed1 = 123854398;
 		long seed2 = 898720792;
 		int totalLine = 999;
-		int numQueries = 50; // number of queries to generate; pre-fixed
-		int numSeq = 24000; // num of road ids to take; length of query string
-		String filename = "D:/research/traj_indexing/Traj_Olden_1k_3k.txt"; // input
-																			// file
-		String outfile = "D:/research/traj_indexing/Traj_Olden_1k_3k_q100.txt"; // output
-																				// file
-		BufferedReader br = new BufferedReader(new FileReader(filename));
+		int numQueries = 100; // number of queries to generate; pre-fixed
+		int numSeq = 800; // num of road ids to take; length of query string
+		String dirname = "/home/zhoujian/traj/trajLengthExp/";
+		String filename = "trajLength8000.txt";
+		String fullname = dirname + filename; // input file
+		String outfile = dirname + "query" + numSeq + "_" + filename; // output file
+		BufferedReader br = new BufferedReader(new FileReader(fullname));
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outfile));
 		Random rand = new Random(seed1);
 		int currLine = 0;
@@ -35,7 +40,9 @@ public class QueryGen {
 				br.readLine();
 			}
 			currLine = linenumber;
-			System.out.println("linenumber: " + linenumber);
+			if (linenumber % 100==00){
+				System.out.println("linenumber: " + linenumber);
+			}
 			String line = br.readLine();
 			if (line != null) {
 				StringTokenizer st = new StringTokenizer(line, " ");
