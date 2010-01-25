@@ -91,8 +91,9 @@ public class RandomDataGenerator {
 
 	public void simNumSeqsToFile(String dirname, int seqLength, int roadSize) {
 
-		int[] numSeqs = { 2000, 4000, 6000, 8000, 10000 }; // numseqs to sim
-//		int [] numSeqs={2000};
+//		int[] numSeqs = { 2000, 4000, 6000, 8000, 10000 }; // numseqs to sim
+//		int[] numSeqs = {10000}; // numseqs to sim
+		int [] numSeqs={6000};
 		for (int numSeq : numSeqs) {
 			System.out.println("simNumSeqs on " + numSeq);
 			String filename = dirname + "syn" + numSeq + ".txt";
@@ -103,12 +104,26 @@ public class RandomDataGenerator {
 		}
 	}
 
+	public void simTrajSeqLength(String dirname, int numSeq, int roadSize){
+//		int[] seqlengths = {2000, 4000, 6000, 8000};
+		int[] seqlengths = {8000};
+		for (int l : seqlengths){
+			System.out.println("simTrajSeqLength on " + l);
+			String filename = dirname + "trajLength" + l + ".txt";
+			FileHandler fh = new FileHandler();
+			BufferedWriter bw = fh.getWriter(filename);
+			genSequenceToFile(numSeq, l, roadSize, bw);
+			FileHandler.closeWriter(bw);
+		}
+	}
 	public static void main(String[] args) throws Exception {
 		//Destination directory name
-		String dirname = "/home/zhoujian/traj/data1/";
+		String dirname = "/home/zhoujian/traj/data1_small/";
 		int roadSize = 1000000; // 1 million roads size
-		int seqLength = 60000; //length of every trajectory sequence
+		int seqLength = 6000; //default length of every trajectory sequence
+		int numSeq = 6000; //default number of sequences
 		RandomDataGenerator gen = new RandomDataGenerator();
-		gen.simNumSeqsToFile(dirname, seqLength, roadSize);
+//		gen.simNumSeqsToFile(dirname, seqLength, roadSize);
+		gen.simTrajSeqLength(dirname, numSeq, roadSize);
 	}
 }
