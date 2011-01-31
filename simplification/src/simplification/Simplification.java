@@ -47,6 +47,10 @@ public class Simplification {
 //            simplifyDouglasPeuckerFunctionStar(0, fixes.size() - 1);
             if (algorithm == 0) {
                 simplifyDouglasPeuckerFunction(0, routeCoords.length - 1, epsilon);
+            } else if (algorithm == 1) {
+                simplifyDouglasPeuckerFunctionStar(0, routeCoords.length - 1, epsilon);
+            } else if (algorithm == 2) {
+                simplifyDouglasPeuckerFunctionPlus(0, routeCoords.length - 1, epsilon);
             }
             System.out.println("rest points " + pointsToKeep.size());
             resArr = new Integer[pointsToKeep.size()];
@@ -104,6 +108,18 @@ public class Simplification {
         return dist;
     }
 
+    private double distanceToSegmentStar(double p1x, double p1y, double p2x, double p2y, double px, double py) {
+        double midX = p1x + (p2x - p1x) / 2;
+        double midY = p1y + (p2y - p2y) / 2;
+//        System.out.println((midX - px) + " " + (midY - py));
+//        double distance = Math.sqrt(Math.pow((midX - px), 2) + Math.pow((midY - py), 2));
+        double diffX = midX - px;
+        double diffY = midY - py;
+        double distance = Math.sqrt(diffX * diffX + diffY * diffY);
+
+        return distance;
+    }
+
     private void simplifyDouglasPeuckerFunction(int start, int end, double epsilon) {
 
         double maxDistance = 0.0;
@@ -126,10 +142,71 @@ public class Simplification {
 //        System.out.println("tolimiausias " + farthestIndex + " dist=" + maxDistance);
         if (maxDistance > epsilon && farthestIndex != 0) {
             pointsToKeep.add(farthestIndex);
-            System.out.println(farthestIndex +" " + x + " " + y);
+            System.out.println(farthestIndex + " " + x + " " + y);
 //            distances.put(farthestIndex, maxDistance);
             simplifyDouglasPeuckerFunction(start, farthestIndex, epsilon);
             simplifyDouglasPeuckerFunction(farthestIndex, end, epsilon);
+        }
+    }
+
+    private void simplifyDouglasPeuckerFunctionStar(int start, int end, double epsilon) {
+
+        double maxDistance = 0.0;
+        int farthestIndex = 0;
+
+//        System.out.println("atejo " + start + " " + end);
+
+        for (int i = start; i < end; i++) {
+            double distance = distanceToSegmentStar(routeCoords[start].x, routeCoords[start].y, routeCoords[end].x, routeCoords[end].y, routeCoords[i].x, routeCoords[i].y);
+            if (distance > maxDistance && i != start) {
+                maxDistance = distance;
+                farthestIndex = i;
+            }
+        }
+//        System.out.println("tolimiausias " + farthestIndex + " dist=" + maxDistance + " " + pointsToKeep.size());
+        if (maxDistance > epsilon && farthestIndex != 0) {
+//            System.out.println("         pasiliekam " + farthestIndex + " " + pointsToKeep.size());
+            pointsToKeep.add(farthestIndex);
+//            distances.put(farthestIndex, maxDistance);
+            simplifyDouglasPeuckerFunctionStar(start, farthestIndex, epsilon);
+            simplifyDouglasPeuckerFunctionStar(farthestIndex, end, epsilon);
+        }
+    }
+
+    private void simplifyDouglasPeuckerFunctionPlus(int start, int end, double epsilon) {
+
+        double maxDistanceOrt = 0.0;
+        int farthestIndex = 0;
+        double diffPoints = distanceToSegmentStar(routeCoords[start].x, routeCoords[start].y, routeCoords[end].x, routeCoords[end].y, routeCoords[0].x, routeCoords[0].y);
+
+//        System.out.println("atejo " + start + " " + end);
+
+        for (int i = start; i < end; i++) {
+            double distanceOrt = distanceToSegment(routeCoords[start].x, routeCoords[start].y, routeCoords[end].x, routeCoords[end].y, routeCoords[i].x, routeCoords[i].y);
+
+            if (distanceOrt > epsilon && i != 0) {
+//                System.out.println("i " + i);
+                double distanceEuc = distanceToSegmentStar(routeCoords[start].x, routeCoords[start].y, routeCoords[end].x, routeCoords[end].y, routeCoords[i].x, routeCoords[i].y);
+                double dP = Math.sqrt(distanceEuc * distanceEuc - distanceOrt * distanceOrt);
+
+                if (dP < diffPoints) {
+                    farthestIndex = i;
+                }
+            }
+
+
+//            if (distanceOrt > maxDistanceOrt) {
+//                maxDistanceOrt = distanceOrt;
+//                farthestIndex = i;
+//            }
+        }
+//        System.out.println("tolimiausias " + farthestIndex + " dist=" + maxDistance + " " + pointsToKeep.size());
+        if (farthestIndex != 0) {
+//            System.out.println("         pasiliekam " + farthestIndex + " " + pointsToKeep.size());
+            pointsToKeep.add(farthestIndex);
+//            distances.put(farthestIndex, maxDistance);
+            simplifyDouglasPeuckerFunctionPlus(start, farthestIndex, epsilon);
+            simplifyDouglasPeuckerFunctionPlus(farthestIndex, end, epsilon);
         }
     }
 

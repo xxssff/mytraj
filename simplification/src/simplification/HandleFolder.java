@@ -92,12 +92,13 @@ public class HandleFolder {
         File[] listOfFiles = inFolder.listFiles();
         System.out.println("files " + listOfFiles.length);
 //        for (int i = 0; i < listOfFiles.length; i++) {
-        for (int i = 0; i < 1; i++) {
+        for (int i = 1; i < 2; i++) {
             if (listOfFiles[i].isFile()) {
                 System.out.println("File " + listOfFiles[i].getName());
                 Simplification simpl = new Simplification();
 
-                Integer[] resArr = simpl.getStartRoute(folderUrl + "\\" + listOfFiles[i].getName(), 0, 50.0);
+//                Integer[] resArr = simpl.getStartRoute(folderUrl + "\\" + listOfFiles[i].getName(), 0, 50.0);
+                Integer[] resArr = simpl.getStartRoute(folderUrl + "\\" + listOfFiles[i].getName(), 2, 50.0);
                 if (resArr != null) {
                     System.out.println(resArr.length);
                     createSimplifiedFile(folderUrl, listOfFiles[i].getName(), resArr, resUrl);
