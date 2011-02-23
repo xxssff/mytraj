@@ -85,6 +85,10 @@ public class Area {
         return new TimeCoord(new Coordinate(x, y), timeBetween);
     }
 
+//    public ArrayList<> countDistance() {
+//
+//    }
+
     public static void main(String[] args) {
         Area a = new Area();
 

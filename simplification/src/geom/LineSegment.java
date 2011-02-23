@@ -1,7 +1,6 @@
 package geom;
 
-import java.awt.Point;
-import java.awt.geom.Point2D;
+import com.vividsolutions.jts.geom.Coordinate;
 
 import entity.TLocation;
 
