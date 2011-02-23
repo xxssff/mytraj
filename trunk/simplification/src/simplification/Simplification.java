@@ -52,7 +52,7 @@ public class Simplification {
             } else if (algorithm == 2) {
                 simplifyDouglasPeuckerFunctionPlus(0, routeCoords.length - 1, epsilon);
             }
-            System.out.println("rest points " + pointsToKeep.size());
+//            System.out.println("rest points " + pointsToKeep.size());
             resArr = new Integer[pointsToKeep.size()];
             pointsToKeep.toArray(resArr);
             Arrays.sort(resArr);
@@ -72,7 +72,7 @@ public class Simplification {
         if (algorithm == 0) {
             simplifyDouglasPeuckerFunction(0, routeCoords.length - 1, epsilon);
         }
-        System.out.println("rest points " + pointsToKeep.size());
+//        System.out.println("rest points " + pointsToKeep.size());
         resArr = new Integer[pointsToKeep.size()];
         pointsToKeep.toArray(resArr);
 
@@ -142,7 +142,7 @@ public class Simplification {
 //        System.out.println("tolimiausias " + farthestIndex + " dist=" + maxDistance);
         if (maxDistance > epsilon && farthestIndex != 0) {
             pointsToKeep.add(farthestIndex);
-            System.out.println(farthestIndex + " " + x + " " + y);
+//            System.out.println(farthestIndex + " " + x + " " + y);
 //            distances.put(farthestIndex, maxDistance);
             simplifyDouglasPeuckerFunction(start, farthestIndex, epsilon);
             simplifyDouglasPeuckerFunction(farthestIndex, end, epsilon);

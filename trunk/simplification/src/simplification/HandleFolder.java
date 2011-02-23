@@ -82,7 +82,7 @@ public class HandleFolder {
         }
     }
 
-    public String generateSimplifiedVersion(String folderUrl, String outUrl) throws Exception {
+    public String generateSimplifiedVersion(String folderUrl, String outUrl, double epsilon) throws Exception {
         System.out.println("folder url " + folderUrl);
         String resUrl = outUrl;
 //        File resFolder = new File(resUrl);
@@ -91,14 +91,14 @@ public class HandleFolder {
         File inFolder = new File(folderUrl);
         File[] listOfFiles = inFolder.listFiles();
         System.out.println("files " + listOfFiles.length);
-//        for (int i = 0; i < listOfFiles.length; i++) {
-        for (int i = 1; i < 2; i++) {
+        for (int i = 0; i < listOfFiles.length; i++) {
+//        for (int i = 1; i < 2; i++) {
             if (listOfFiles[i].isFile()) {
                 System.out.println("File " + listOfFiles[i].getName());
                 Simplification simpl = new Simplification();
 
 //                Integer[] resArr = simpl.getStartRoute(folderUrl + "\\" + listOfFiles[i].getName(), 0, 50.0);
-                Integer[] resArr = simpl.getStartRoute(folderUrl + "\\" + listOfFiles[i].getName(), 2, 50.0);
+                Integer[] resArr = simpl.getStartRoute(folderUrl + "\\" + listOfFiles[i].getName(), 0, epsilon);
                 if (resArr != null) {
                     System.out.println(resArr.length);
                     createSimplifiedFile(folderUrl, listOfFiles[i].getName(), resArr, resUrl);
@@ -138,7 +138,7 @@ public class HandleFolder {
         out.write(lines[0] + "\n");
         out.write(lines[1] + "\n");
         for (int i = 0; i < linesArr.length; i++) {
-            System.out.println("add line " + linesArr[i]);
+//            System.out.println("add line " + linesArr[i]);
             out.write(lines[linesArr[i]+1] + "\n");
             out.flush();
         }
@@ -181,6 +181,61 @@ public class HandleFolder {
         }
     }
 
+    public void importDataToDatabase2(String folderUrl, String epsilon) throws SQLException {
+        File inFolder = new File(folderUrl);
+        File[] listOfFiles = inFolder.listFiles();
+        System.out.println(folderUrl);
+        Database db = null;
+
+        try {
+            db = new Database();
+            PrepareFiles pf = new PrepareFiles();
+            String tbName = "simpl_data_routes_" + epsilon;
+            pf.createTable(db.getConnection(), tbName);
+
+        for (int i = 0; i < listOfFiles.length; i++) {
+//            for (int i = 0; i < 1; i++) {
+                if (listOfFiles[i].isFile()) {
+                    System.out.println("File " + listOfFiles[i].getName());
+                    String fName = listOfFiles[i].getName();
+
+                    FileInputStream fstream = new FileInputStream(folderUrl + "\\" + fName);
+                    DataInputStream in = new DataInputStream(fstream);
+                    BufferedReader br = new BufferedReader(new InputStreamReader(in));
+
+                    String strLine;
+                    strLine = br.readLine();
+//                    System.out.println(strLine);
+                    while ((strLine = br.readLine()) != null) {
+//                        System.out.println(strLine);
+                        String[] insert = strLine.split(" ");
+                        String insertStr = insert[0] + ",'"
+                        + insert[1] + "',"
+                        + insert[2] + ","
+                        + insert[3] + ","
+                        + insert[4] + ","
+                        + insert[5] + ",'"
+                        + insert[6] + "','"
+                        + insert[7] + "','"
+                        + insert[8] + "','"
+                        + insert[9] + "',"
+                        + insert[10] + ","
+                        + insert[11] + ","
+                        + insert[12] + ","
+                        + insert[13] + ","
+                        + insert[14] + ",'"
+                        + insert[15] + "','"
+                        + insert[16] + "',"
+                        + insert[17];
+                        pf.insertData(db.getConnection(), tbName, insertStr);
+                        db.insertData(strLine);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            db.closeConnection();
+        }
+    }
     public void getRoutes(String carId, String driverId) throws SQLException, IOException {
         Database db = new Database();
         db.generateRouteFiles(carId, driverId);

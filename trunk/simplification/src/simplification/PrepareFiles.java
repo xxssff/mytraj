@@ -16,6 +16,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import org.joda.time.LocalTime;
+import org.joda.time.LocalDate;
 import org.joda.time.Minutes;
 import org.joda.time.Seconds;
 
@@ -114,7 +115,7 @@ public class PrepareFiles {
         ps.close();
     }
 
-    private void createTable(Connection conn, String tbName) throws Exception {
+    public void createTable(Connection conn, String tbName) throws Exception {
         String create = "SELECT * FROM simpl_create_table('" + tbName + "')";
         System.out.println("                 " + create);
         PreparedStatement ps = null;
@@ -123,8 +124,9 @@ public class PrepareFiles {
         ps.close();
     }
 
-    private void insertData(Connection conn, String tbName, String insertSt) throws Exception {
+    public void insertData(Connection conn, String tbName, String insertSt) throws Exception {
         String insert = "INSERT INTO " + tbName + " VALUES(" + insertSt + ")";
+//        System.out.println(insert);
         PreparedStatement ps = null;
         ps = conn.prepareStatement(insert);
         ps.execute();
@@ -287,6 +289,13 @@ public class PrepareFiles {
         return timeStr;
     }
 
+    public String correctDate(String dateStr) {
+        while (dateStr.length() < 6) {
+            dateStr = "0" + dateStr;
+        }
+        return dateStr;
+    }
+
     private LocalTime getTime(String timeStr) {
         timeStr = correctTime(timeStr);
 
@@ -297,6 +306,20 @@ public class PrepareFiles {
         LocalTime lc = new LocalTime(Integer.parseInt(time[0]), Integer.parseInt(time[1]), Integer.parseInt(time[2]));
         return lc;
     }
+
+//    private LocalTime getDate(String dateStr) {
+//        dateStr = correctDate(dateStr);
+//
+////        System.out.println(timeStr);
+//        String dateFull = dateStr.substring(0, 2) + "-" + dateStr.substring(2, 4) + "-" + dateStr.substring(4, 6);
+//        String date[] = dateFull.split("-");
+////        System.out.println(timeFull);
+//
+//        LocalDate ld = new LocalDate(Integer.parseInt(date[0]), Integer.parseInt(date[1]), Integer.date(date[2]));
+//        LocalDate ld = new LocalDate();
+//        return ld;
+//    }
+
 
     private Integer[] getSeparateRouteIndexes(String[] data) {
         ArrayList<Integer> indexes = new ArrayList<Integer>();
