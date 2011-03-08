@@ -35,7 +35,7 @@ public class Traj {
 
 	public double getDist(Cluster cluster) {
 		int n = cluster.getSize();
-		TimeCoord tc = cluster.getCenter();
+//		TimeCoord tc = cluster.getCenter();
 		return 0;
 	}
 
