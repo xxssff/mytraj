@@ -2,11 +2,10 @@ package entity;
 
 public class MyEvent implements Comparable {
 	public double time;
-	public Cluster cluster;
-
-	public MyEvent(double time, Cluster cluster) {
+	public int CID;
+	public MyEvent(double time, Integer CID) {
 		this.time = time;
-		this.cluster = cluster;
+		this.CID = CID;
 	}
 
 	@Override
