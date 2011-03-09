@@ -139,10 +139,10 @@ public class HandleFolder {
         out.write(lines[1] + "\n");
         for (int i = 0; i < linesArr.length; i++) {
 //            System.out.println("add line " + linesArr[i]);
-            out.write(lines[linesArr[i]+1] + "\n");
+            out.write(lines[linesArr[i] + 1] + "\n");
             out.flush();
         }
-        out.write(lines[lines.length-1] + "\n");
+        out.write(lines[lines.length - 1] + "\n");
         out.flush();
         out.close();
 
@@ -193,7 +193,7 @@ public class HandleFolder {
             String tbName = "simpl_data_routes_" + epsilon;
             pf.createTable(db.getConnection(), tbName);
 
-        for (int i = 0; i < listOfFiles.length; i++) {
+            for (int i = 0; i < listOfFiles.length; i++) {
 //            for (int i = 0; i < 1; i++) {
                 if (listOfFiles[i].isFile()) {
                     System.out.println("File " + listOfFiles[i].getName());
@@ -210,23 +210,23 @@ public class HandleFolder {
 //                        System.out.println(strLine);
                         String[] insert = strLine.split(" ");
                         String insertStr = insert[0] + ",'"
-                        + insert[1] + "',"
-                        + insert[2] + ","
-                        + insert[3] + ","
-                        + insert[4] + ","
-                        + insert[5] + ",'"
-                        + insert[6] + "','"
-                        + insert[7] + "','"
-                        + insert[8] + "','"
-                        + insert[9] + "',"
-                        + insert[10] + ","
-                        + insert[11] + ","
-                        + insert[12] + ","
-                        + insert[13] + ","
-                        + insert[14] + ",'"
-                        + insert[15] + "','"
-                        + insert[16] + "',"
-                        + insert[17];
+                                + insert[1] + "',"
+                                + insert[2] + ","
+                                + insert[3] + ","
+                                + insert[4] + ","
+                                + insert[5] + ",'"
+                                + insert[6] + "','"
+                                + insert[7] + "','"
+                                + insert[8] + "','"
+                                + insert[9] + "',"
+                                + insert[10] + ","
+                                + insert[11] + ","
+                                + insert[12] + ","
+                                + insert[13] + ","
+                                + insert[14] + ",'"
+                                + insert[15] + "','"
+                                + insert[16] + "',"
+                                + insert[17];
                         pf.insertData(db.getConnection(), tbName, insertStr);
                         db.insertData(strLine);
                     }
@@ -236,6 +236,7 @@ public class HandleFolder {
             db.closeConnection();
         }
     }
+
     public void getRoutes(String carId, String driverId) throws SQLException, IOException {
         Database db = new Database();
         db.generateRouteFiles(carId, driverId);
@@ -243,7 +244,10 @@ public class HandleFolder {
     }
 
     private LocalTime getTime(String timeStr) {
-        if (timeStr.length() == 5) {
+//        if (timeStr.length() == 5) {
+//            timeStr = "0" + timeStr;
+//        }
+        while (timeStr.length() < 6) {
             timeStr = "0" + timeStr;
         }
         String timeFull = timeStr.substring(0, 2) + ":" + timeStr.substring(2, 4) + ":" + timeStr.substring(4, 6);
@@ -251,6 +255,22 @@ public class HandleFolder {
         System.out.println(timeFull);
         LocalTime lc = new LocalTime(Integer.parseInt(time[0]), Integer.parseInt(time[1]), Integer.parseInt(time[2]));
         return lc;
+    }
+
+    public void test() {
+        LocalTime startTime = getTime("230505");
+        LocalTime currTime = getTime("120505");
+        Seconds s = Seconds.secondsBetween(startTime, currTime);
+        Minutes m = s.toStandardMinutes();
+        int minBetween = m.getMinutes();
+        System.out.println("minutes in between: " + minBetween);
+
+        DateTime start = new DateTime("2001-01-01T23:55:05");
+        DateTime end = new DateTime("2001-01-02T01:05:05");
+        Minutes min = Minutes.minutesBetween(start, end);
+        int bet = min.getMinutes();
+        int day = start.getDayOfMonth();
+        System.out.println("day " + day + " " + bet);
     }
 
     public void cutUserRoutes(String fileUrl, String resFolderUrl) {

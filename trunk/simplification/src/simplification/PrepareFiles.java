@@ -116,7 +116,7 @@ public class PrepareFiles {
     }
 
     public void createTable(Connection conn, String tbName) throws Exception {
-        String create = "SELECT * FROM simpl_create_table('" + tbName + "')";
+        String create = "SELECT * FROM simpl_create_table_old('" + tbName + "')";
         System.out.println("                 " + create);
         PreparedStatement ps = null;
         ps = conn.prepareStatement(create);
