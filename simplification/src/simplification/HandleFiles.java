@@ -18,7 +18,7 @@ public class HandleFiles {
      */
     public static void main(String[] args) throws Exception {
         PrepareData pd = new PrepareData();
-        pd.mainPreparation("C:\\routes\\gps_car2_no_home", "C:\\routes\\res");
+//        pd.mainPreparation("C:\\routes\\gps_car2_no_home", "C:\\routes\\res");
 //        String url = args[0];
 //        HandleFolder hf = new HandleFolder();
 //        String resUrl = hf.removeWhiteSpacesInFiles(url);
