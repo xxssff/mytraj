@@ -10,6 +10,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalTime;
+import org.joda.time.Seconds;
 import simplification.Database;
 
 /**
@@ -40,8 +44,7 @@ public class Data {
 
         if (type == 1) {
             select = "select * from simpl_get_defined_routes('" + tbName + "', '" + timeFrom + "', '" + timeTo + "') as p(routeid int8, mpx text, mpy text, time time, stamp timestamp, time0 bigint)";
-        }
-        else if (type == 0) {
+        } else if (type == 0) {
             select = "select * from simpl_get_defined_routes_t('" + tbName + "', '" + timeFrom + "', '" + timeTo + "') as p(routeid int8, mpx text, mpy text, time time, stamp timestamp, time0 bigint)";
         }
         PreparedStatement ps = null;
@@ -62,23 +65,78 @@ public class Data {
                 routeId = routeNext;
                 points = new ArrayList<DataPoint>();
 
-            }
-            else if (routeId != routeNext) {
+            } else if (routeId != routeNext) {
                 hm.put(routeId, points);
 
                 routeId = routeNext;
                 points = new ArrayList<DataPoint>();
             }
             Coordinate c = new Coordinate(Double.parseDouble(result.getString("mpx")), Double.parseDouble(result.getString("mpy")));
-            DataPoint dp = new DataPoint(c, result.getString("time"), result.getString("stamp"), result.getInt("time0"));
+            DataPoint dp = new DataPoint(routeId, c, result.getString("time"), result.getString("stamp"), result.getInt("time0"));
             points.add(dp);
         }
         hm.put(routeId, points);
-        
+
         ps.close();
         result.close();
         db.closeConnection();
 
         return hm;
     }
+
+    /**
+     * return imaginary data point between provided trajecotry 1 points, at time from p
+     *
+     * @param t1_p1 - trajectory point 1
+     * @param t1_p2 - trajectory point 2
+     * @param p - sample point
+     * @param type - 1 or 0
+     * @return
+     */
+    public DataPoint getImaginaryPoint(DataPoint t1_p1, DataPoint t1_p2, DataPoint p, int type) {
+        Seconds sec = null;
+        int secBetween = -1;
+
+        if (type == 1) {
+            DateTime startStamp = new DateTime(t1_p1.dateTime.replace(" ", "T"));
+            DateTime currStamp = new DateTime(p.dateTime.replace(" ", "T"));
+            sec = Seconds.secondsBetween(startStamp, currStamp);
+            secBetween = sec.getSeconds();
+        }
+        else {
+            LocalTime startStamp = new LocalTime(t1_p1.time);
+            LocalTime currStamp = new LocalTime(p.time);
+            sec = Seconds.secondsBetween(startStamp, currStamp);
+            secBetween = sec.getSeconds();
+
+            if (secBetween < 0) {
+                String[] date = t1_p1.dateTime.split(" ");
+                LocalDate ld = new LocalDate(date[0]);
+                ld = ld.plusDays(1);
+                DateTime midnight = new DateTime(ld.toString() + "T00:00:00");
+                DateTime p1 = new DateTime(t1_p1.dateTime.replace(" ", "T"));
+
+                sec = Seconds.secondsBetween(p1, midnight);
+                secBetween = sec.getSeconds();
+                DateTime p2 = new DateTime(p.dateTime.replace(" ", "T"));
+                sec = Seconds.secondsBetween(midnight, p2);
+                secBetween = secBetween + sec.getSeconds();
+            }
+        }
+
+        int time = t1_p1.time0 + secBetween;
+
+        double tau = (time - t1_p1.time0) / (t1_p2.time0 - t1_p1.time0);
+
+        double x = tau * (t1_p2.p.x - t1_p1.p.x) + t1_p1.p.x;
+        double y = tau * (t1_p2.p.y - t1_p1.p.y) + t1_p1.p.y;
+
+        DataPoint newP = new DataPoint(t1_p1.routeId, new Coordinate(x, y), p.time, p.dateTime, time);
+
+        return newP;
+    }
+
+//    public ArrayList<DataPoint> getNextDataPoint() {
+//
+//    }
 }
