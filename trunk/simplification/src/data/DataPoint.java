@@ -12,6 +12,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * @author ceikute
  */
 public class DataPoint {
+    public int routeId;
     public Coordinate p;
     public String time;
     public String dateTime;
@@ -20,7 +21,8 @@ public class DataPoint {
     public DataPoint() {
     }
 
-    public DataPoint(Coordinate p, String time, String dateTime, int time0) {
+    public DataPoint(int routeId, Coordinate p, String time, String dateTime, int time0) {
+        this.routeId = routeId;
         this.p = p;
         this.time = time;
         this.dateTime = dateTime;
