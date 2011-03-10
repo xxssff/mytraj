@@ -10,7 +10,7 @@ import java.util.ArrayList;
  * 
  */
 public class Cluster {
-	int clusterId;
+	public int clusterId;
 	public ArrayList<Integer> members;
 	public double startTime;
 	public double duration;
@@ -57,4 +57,6 @@ public class Cluster {
 	public double getScore() {
 		return score;
 	}
+	
+	
 }

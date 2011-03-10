@@ -1,6 +1,10 @@
 package entity;
 
+import org.joda.time.LocalTime;
+
 import com.vividsolutions.jts.geom.Coordinate;
+
+import data.DataPoint;
 
 /**
  * Base class for moving object
@@ -11,22 +15,42 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 public class MovingObject {
 	public int oid;
-	public TimeCoord t_coord;
+	public DataPoint dataPoint;
 	public Velocity v;
 	public boolean label; // {true=CORE, false=BORDER}
 	public int cid; // clusterID; -1 is noise; 0 is unclassified
 
 	public MovingObject() {
 		oid = 0;
-		t_coord = null;
+		dataPoint = null;
 		v = null;
 		label = false;
 		cid = 0;
 	}
 
-	public MovingObject(int oid, TimeCoord timeCoord, Velocity velocity) {
+	public MovingObject(int oid, DataPoint dataPoint, Velocity velocity) {
 		this.oid = oid;
-		this.t_coord = timeCoord;
+		this.dataPoint = dataPoint;
+		this.v = velocity;
+		this.label = false;
+		this.cid = 0;
+	}
+
+	/**
+	 * constructor for testing purpose
+	 * 
+	 * @param oid
+	 * @param time
+	 * @param coordinate
+	 * @param velocity
+	 */
+	public MovingObject(int oid, int routeid, int time,
+			Coordinate coordinate, Velocity velocity) {
+		this.oid = oid;
+		this.dataPoint = new DataPoint();
+		this.dataPoint.p = coordinate;
+		this.dataPoint.routeId = routeid;
+		this.dataPoint.time0 = time;
 		this.v = velocity;
 		this.label = false;
 		this.cid = 0;
@@ -40,11 +64,12 @@ public class MovingObject {
 	 * @return distance
 	 */
 	public double distance(MovingObject aMo) {
-		return this.t_coord.p.distance(aMo.t_coord.p);
+		return this.dataPoint.p.distance(aMo.dataPoint.p);
 	}
 
 	public String toString() {
-		return "[" + oid + " " + "(" + t_coord.p.x + "," + t_coord.p.y + ","
-				+ t_coord.t + ") " + v + " " + cid + " " + label+"]";
+		return "[" + oid + " " + "(" + dataPoint.p.x + "," + dataPoint.p.y
+				+ "," + dataPoint.getTimeString() + ") " + v + " " + cid + " "
+				+ label + "]";
 	}
 }

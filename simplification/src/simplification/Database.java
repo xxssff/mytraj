@@ -3,12 +3,12 @@ package simplification;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.String;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 
 /*
@@ -24,7 +24,7 @@ public class Database {
     Connection conn;
 
     public Database() {
-        String dburl = "jdbc:postgresql://localhost:5432/routes";
+        String dburl = "jdbc:postgresql://10.11.93.180:5432/routes";
         String dbuser = "postgres";
         String dbpass = "nenoriu";
 
@@ -144,5 +144,18 @@ public class Database {
             conn.close();
             System.out.println("Connection closed..");
         }
+    }
+    
+    public static void main (String args[]) throws Exception{
+    	String sql = "select * from simpl_trajectories_5 limit 2";
+    	Database db = new Database();
+    	Statement st = db.conn.createStatement();
+    	ResultSet rs = st.executeQuery(sql);
+    	while (rs.next()){
+    		System.out.println(rs.getString(1));
+    		System.out.println(rs.getString(2));
+    	}
+    	
+    	db.closeConnection();
     }
 }

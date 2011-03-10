@@ -6,8 +6,8 @@ import algo.DBScan;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
+import data.DataPoint;
 import entity.MovingObject;
-import entity.TimeCoord;
 
 public class DBScanTest {
 
@@ -26,9 +26,7 @@ public class DBScanTest {
 		ArrayList<MovingObject> objs = new ArrayList<MovingObject>();
 
 		for (int i = 0; i < coords.size(); i++) {
-			MovingObject mo1 = new MovingObject(i, new TimeCoord(
-					new Coordinate(coords.get(i)[0], coords.get(i)[1]), 0),
-					null);
+			MovingObject mo1 = null;
 			objs.add(mo1);
 		}
 		
