@@ -136,7 +136,8 @@ public class Data {
 				String[] date = t1_p1.dateTime.split(" ");
 				LocalDate ld = new LocalDate(date[0]);
 				ld = ld.plusDays(1);
-				DateTime midnight = new DateTime(ld.toString() + "T00:00:00");
+                                String dateStr = ld.getYear() + "-" + fixDateOrTime(ld.getMonthOfYear()) + "-" + fixDateOrTime(ld.getDayOfMonth());
+				DateTime midnight = new DateTime(dateStr + "T00:00:00");
 				DateTime p1 = new DateTime(t1_p1.dateTime.replace(" ", "T"));
 
 				sec = Seconds.secondsBetween(p1, midnight);
@@ -163,4 +164,38 @@ public class Data {
 	// public ArrayList<DataPoint> getNextDataPoint() {
 	//
 	// }
+
+        /**
+         *
+         * @param time - time from
+         * @param hours - number of hours to add
+         * @param type - 1 - date and time; 0 - time
+         * @return new string of next time
+         */
+
+        private String fixDateOrTime(int time) {
+            String t_str = Integer.toString(time);
+            if (t_str.length() < 2)
+                t_str = "0" + t_str;
+            return t_str;
+        }
+
+        public String getNewTime(String time, int hours, int type) {
+            String newTime = "";
+
+            if (type == 1) {
+                DateTime dt = new DateTime(time.replace(" ", "T"));
+                dt = dt.plusHours(hours);
+
+                newTime = dt.getYear() + "-" + fixDateOrTime(dt.getMonthOfYear()) + "-" + fixDateOrTime(dt.getDayOfMonth()) + " " + fixDateOrTime(dt.getHourOfDay()) + ":" + fixDateOrTime(dt.getMinuteOfHour()) + ":" + fixDateOrTime(dt.getSecondOfMinute());
+            }
+            else if (type == 0) {
+                LocalTime lt = new LocalTime(time);
+                lt = lt.plusHours(hours);
+
+                newTime = fixDateOrTime(lt.getHourOfDay()) + ":" + fixDateOrTime(lt.getMinuteOfHour()) + ":" + fixDateOrTime(lt.getSecondOfMinute());
+            }
+
+            return newTime;
+        }
 }
