@@ -3,6 +3,8 @@ package algo;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+
+import entity.Global;
 import entity.MovingObject;
 
 /**
@@ -12,18 +14,12 @@ import entity.MovingObject;
  */
 public class DBScan {
 
-	//global cid generator
-	static int CID=1;
-	/**
-	 * 
-	 */
 	public static void doDBScan(ArrayList<MovingObject> objects, double eps,
 			double minPts) {
 		for (MovingObject obj : objects) {
 			if (obj.cid == 0) {
-				if (expandCluster(objects, obj, CID, eps, minPts)) {
-					CID++;
-				}
+				expandCluster(objects, obj, Global.nextCid(), eps, minPts);
+				
 			}
 		}
 		
@@ -73,7 +69,6 @@ public class DBScan {
 		}
 	}
 
-	
 	/**
 	 * naive in-memory implementation
 	 * 
@@ -106,12 +101,12 @@ public class DBScan {
 	public static void doDBScan(ArrayList<Integer> U, int eps, int minPts,
 			HashMap<Integer, MovingObject> allObjs) {
 		ArrayList<MovingObject> objs = new ArrayList<MovingObject>();
-		
+
 		for (Integer i : U) {
 			objs.add(allObjs.get(i));
 		}
 		doDBScan(objs, eps, minPts);
-		
+
 	}
 
 }

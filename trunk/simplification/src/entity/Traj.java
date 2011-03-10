@@ -1,5 +1,7 @@
 package entity;
 
+import data.DataPoint;
+
 /**
  * A trajectory is an array of timeCoord
  * 
@@ -8,14 +10,14 @@ package entity;
  */
 
 public class Traj {
-	public TimeCoord[] timeCoords;
+	public DataPoint[] dataPoints;
 
 	public Traj() {
-		timeCoords = new TimeCoord[16];
+		dataPoints = new DataPoint[16];
 	}
 
 	public Traj(int size) {
-		timeCoords = new TimeCoord[size];
+		dataPoints = new DataPoint[size];
 	}
 
 	/**
@@ -26,8 +28,8 @@ public class Traj {
 	 */
 	public double getDissim(Traj anotherTraj) {
 		double res = 0;
-		for (int i = 0; i < timeCoords.length; i++) {
-			double v1 = timeCoords[i].p.distance(anotherTraj.timeCoords[i].p);
+		for (int i = 0; i < dataPoints.length; i++) {
+			double v1 = dataPoints[i].p.distance(anotherTraj.dataPoints[i].p);
 			res += v1 * v1;
 		}
 		return res;
@@ -38,22 +40,5 @@ public class Traj {
 //		TimeCoord tc = cluster.getCenter();
 		return 0;
 	}
-
-	/**
-	 * 
-	 * @param time
-	 * @return the point at the particular time
-	 */
-	public TimeCoord getPoint(double time) {
-		//check time is valid
-		if (time < timeCoords[0].t || time > timeCoords[timeCoords.length-1].t){
-			System.err.println("Time is wrong: "+time +" "+timeCoords[0].t+" "+timeCoords[timeCoords.length-1].t);
-			System.exit(0);
-		}
-		//find the right line seg
-		
-		//find the right point
-		
-		return null;
-	}
+	
 }
