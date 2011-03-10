@@ -14,7 +14,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 public class TestData {
     public static void main(String[] args) throws Exception {
         Data d = new Data();
-//        HashMap hm = d.getDefinedTrajectories("simpl_data_double_1_25", "00:00:00", "00:01:15", 0);
+//        HashMap hm = d.getDefinedTrajectories("simpl_trajectories_5", "00:00:00", "00:01:15", 0);
 
 
 //        System.out.println(hm.toString());
