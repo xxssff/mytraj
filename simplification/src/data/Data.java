@@ -22,7 +22,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * 
- * @author ceikute
+ * @author ceikute, xiaohui
  */
 public class Data {
 
@@ -102,6 +102,10 @@ public class Data {
 					.getString("mpy")));
 			DataPoint dp = new DataPoint(routeId, c, result.getString("time"),
 					result.getString("stamp"), result.getInt("time0"));
+			//set velocity here
+			dp.vx = result.getFloat("vx");
+			dp.vy = result.getFloat("vy"); 
+			 
 			points.add(dp);
 		}
 		hm.put(routeId, points);
@@ -177,8 +181,8 @@ public class Data {
 		double x = tau * (t1_p2.p.x - t1_p1.p.x) + t1_p1.p.x;
 		double y = tau * (t1_p2.p.y - t1_p1.p.y) + t1_p1.p.y;
 
-		DataPoint newP = new DataPoint(t1_p1.routeId, new Coordinate(x, y),
-				p.time, p.dateTime, time);
+		DataPoint newP = new DataPoint(t1_p1.routeId, new Coordinate(x, y), t1_p1.vx, t1_p1.vy,
+				p.time, p.dateTime,  time);
 
 		return newP;
 	}
