@@ -26,11 +26,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  */
 public class Data {
 
-	public static String converTimeToString(LocalTime lt){
+	public static String converTimeToString(LocalTime lt) {
 		String ret = lt.toString();
 		return ret.substring(0, ret.indexOf("."));
 	}
-	
+
 	/**
 	 * method to retrieve defines trajectories from provided DB table and time
 	 * range type = {1, 0} : 1 - considering date and time, 0 - considering only
@@ -100,12 +100,14 @@ public class Data {
 			Coordinate c = new Coordinate(Double.parseDouble(result
 					.getString("mpx")), Double.parseDouble(result
 					.getString("mpy")));
-			DataPoint dp = new DataPoint(routeId, c, result.getString("time"),
-					result.getString("stamp"), result.getInt("time0"));
-			//set velocity here
-			dp.vx = result.getFloat("vx");
-			dp.vy = result.getFloat("vy"); 
-			 
+			LocalTime aTime = new LocalTime(result.getString("time"));
+			LocalDateTime dateTime = new LocalDateTime(result
+					.getString("stamp").replace(" ", "T"));
+			double vx = result.getFloat("vx");
+			double vy = result.getFloat("vy");
+
+			DataPoint dp = new DataPoint(routeId, c, vx, vy, aTime, dateTime,
+					result.getInt("time0"));
 			points.add(dp);
 		}
 		hm.put(routeId, points);
@@ -136,38 +138,40 @@ public class Data {
 		int secBetween = -1;
 
 		if (type == 1) {
-//			DateTime startStamp = new DateTime(t1_p1.dateTime.replace(" ", "T"));
-//			DateTime currStamp = new DateTime(p.dateTime.replace(" ", "T"));
-			
+			// DateTime startStamp = new DateTime(t1_p1.dateTime.replace(" ",
+			// "T"));
+			// DateTime currStamp = new DateTime(p.dateTime.replace(" ", "T"));
+
 			LocalDateTime startStamp = t1_p1.dateTime;
 			LocalDateTime currStamp = p.dateTime;
 			sec = Seconds.secondsBetween(startStamp, currStamp);
 			secBetween = sec.getSeconds();
 		} else {
-//			LocalTime startStamp = new LocalTime(t1_p1.time);
-//			LocalTime currStamp = new LocalTime(p.time);
-			
+			// LocalTime startStamp = new LocalTime(t1_p1.time);
+			// LocalTime currStamp = new LocalTime(p.time);
+
 			LocalTime startStamp = t1_p1.time;
 			LocalTime currStamp = p.time;
 			sec = Seconds.secondsBetween(startStamp, currStamp);
 			secBetween = sec.getSeconds();
 
 			if (secBetween < 0) {
-//				String[] date = t1_p1.dateTime.split(" ");
-//				LocalDate ld = new LocalDate(date[0]);
+				// String[] date = t1_p1.dateTime.split(" ");
+				// LocalDate ld = new LocalDate(date[0]);
 				LocalDate ld = t1_p1.dateTime.toLocalDate();
 				ld = ld.plusDays(1);
 				String dateStr = ld.getYear() + "-"
 						+ fixDateOrTime(ld.getMonthOfYear()) + "-"
 						+ fixDateOrTime(ld.getDayOfMonth());
-				LocalDateTime midnight = new LocalDateTime(dateStr + "T00:00:00");
-//				DateTime p1 = new DateTime(t1_p1.dateTime.replace(" ", "T"));
+				LocalDateTime midnight = new LocalDateTime(dateStr
+						+ "T00:00:00");
+				// DateTime p1 = new DateTime(t1_p1.dateTime.replace(" ", "T"));
 				LocalDateTime p1 = t1_p1.dateTime;
 
 				sec = Seconds.secondsBetween(p1, midnight);
 				secBetween = sec.getSeconds();
-//				DateTime p2 = new DateTime(p.dateTime.replace(" ", "T"));
-				
+				// DateTime p2 = new DateTime(p.dateTime.replace(" ", "T"));
+
 				LocalDateTime p2 = p.dateTime;
 				sec = Seconds.secondsBetween(midnight, p2);
 				secBetween = secBetween + sec.getSeconds();
@@ -181,8 +185,8 @@ public class Data {
 		double x = tau * (t1_p2.p.x - t1_p1.p.x) + t1_p1.p.x;
 		double y = tau * (t1_p2.p.y - t1_p1.p.y) + t1_p1.p.y;
 
-		DataPoint newP = new DataPoint(t1_p1.routeId, new Coordinate(x, y), t1_p1.vx, t1_p1.vy,
-				p.time, p.dateTime,  time);
+		DataPoint newP = new DataPoint(t1_p1.routeId, new Coordinate(x, y),
+				t1_p1.vx, t1_p1.vy, p.time, p.dateTime, time);
 
 		return newP;
 	}
@@ -231,7 +235,7 @@ public class Data {
 
 		return newTime;
 	}
-	
+
 	/**
 	 * 
 	 * @param time
@@ -239,8 +243,8 @@ public class Data {
 	 * @param type
 	 * @return new string of next time
 	 */
-	public static String getNewTime(LocalTime time, int hours, int type){
-		String timestring = time.toString(); //toString returns "00:00:00.000" 
+	public static String getNewTime(LocalTime time, int hours, int type) {
+		String timestring = time.toString(); // toString returns "00:00:00.000"
 		timestring = timestring.substring(0, timestring.indexOf("."));
 		return getNewTime(timestring, hours, type);
 	}
