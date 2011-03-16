@@ -69,7 +69,7 @@ public class MovingObject {
 
 	public String toString() {
 		return "[" + oid + " " + "(" + dataPoint.p.x + "," + dataPoint.p.y
-				+ "," + dataPoint.getTimeString() + ") " + v + " " + cid + " "
+				+ "," + dataPoint.toString() + ") " + v + " " + cid + " "
 				+ label + "]";
 	}
 }

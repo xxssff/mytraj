@@ -14,6 +14,7 @@ import entity.Cluster;
 import entity.Global;
 import entity.MovingObject;
 import entity.MyEvent;
+import entity.Velocity;
 
 public class GroupDiscovery {
 	// containers
@@ -106,33 +107,35 @@ public class GroupDiscovery {
 		}
 	}
 
+	
+
 	/**
-	 * 1. pinpoint the time where there are exactly m objects\\ 2. fill up
-	 * containers 3. update base time
+	 * 1. pinpoint the time where there are exactly m objects <br>
+	 * 2. fill up containers
 	 */
-	private static LocalTime getStartTime(
+	private static LocalTime getStartTimeAndFillup(
 			HashMap<Integer, ArrayList<DataPoint>> hm) {
 		if (hm == null) {
 			System.err.println("in getStartTime, hm is null");
 			System.exit(0);
 		}
-		
-		LocalTime resTime =null;
+
+		LocalTime resTime = null;
 		DataPoint[] dpArray = new DataPoint[hm.size()];
-		int counter=0;
-		for(Integer key : hm.keySet()){
+		int counter = 0;
+		for (Integer key : hm.keySet()) {
 			dpArray[counter++] = hm.get(key).get(0);
 		}
 		Arrays.sort(dpArray);
-		
-		resTime = dpArray[minPts-1].time;
-		for(int i=0; i<minPts; i++){
+
+		resTime = dpArray[minPts - 1].time;
+		for (int i = 0; i < minPts; i++) {
 			DataPoint dp = dpArray[i];
-			//TODO get velocity
-			MovingObject mo = new MovingObject(dp.routeId, dp, null);
+			MovingObject mo = new MovingObject(dp.routeId, dp, new Velocity(
+					dp.vx, dp.vy));
 			allObjs.put(mo.oid, mo);
 			objects.add(mo);
-			
+
 		}
 		return resTime;
 	}
@@ -210,16 +213,16 @@ public class GroupDiscovery {
 							nextTimeStr, 0);
 
 			/**
-			 * TODO 1. pinpoint the time where there are exactly m objects\\ 2.
-			 * fill up containers 3. update base time
+			 * 1. pinpoint the time where there are exactly m objects<br>
+			 *  2. fill up containers <br>
+			 *  3. update base time <br>
 			 */
 			if (baseTime.equals(new LocalTime(Global.MINTIME))) {
-				System.out.println("come here");
+				System.out.println("system starts...");
 				// start of the tracing
-				baseTime = getStartTime(hm);
+				baseTime = getStartTimeAndFillup(hm);
 			}
 
-			
 			// process these data
 			process();
 			currTime++;
