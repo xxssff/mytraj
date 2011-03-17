@@ -2,6 +2,8 @@ package entity;
 
 import java.util.ArrayList;
 
+import org.joda.time.LocalTime;
+
 /**
  * Moving objects can change their membership <br>
  * so a cluster keeps only id of its members
@@ -15,6 +17,7 @@ public class Cluster {
 	public double startTime;
 	public double duration;
 	private double score;
+	public LocalTime expiryTime;
 
 	// public double endTime;
 
@@ -33,10 +36,7 @@ public class Cluster {
 		members.remove(moid);
 	}
 
-	// TODO
-	public double getBreakTime() {
-		return 0;
-	}
+	
 
 	
 	public int getSize() {

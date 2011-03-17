@@ -15,10 +15,11 @@ import data.DataPoint;
 
 public class MovingObject {
 	public int oid;
-	public DataPoint dataPoint;
+	public DataPoint dataPoint; //has location and time
 	public Velocity v;
 	public boolean label; // {true=CORE, false=BORDER}
 	public int cid; // clusterID; -1 is noise; 0 is unclassified
+	public LocalTime exitTime;
 
 	public MovingObject() {
 		oid = 0;
@@ -67,6 +68,14 @@ public class MovingObject {
 		return this.dataPoint.p.distance(aMo.dataPoint.p);
 	}
 
+	public double getX(){
+		return this.dataPoint.p.x;
+	}
+	
+	public double getY(){
+		return this.dataPoint.p.y;
+	}
+	
 	public String toString() {
 		return "[" + oid + " " + "(" + dataPoint.p.x + "," + dataPoint.p.y
 				+ "," + dataPoint.toString() + ") " + v + " " + cid + " "

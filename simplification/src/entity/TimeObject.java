@@ -2,17 +2,20 @@ package entity;
 
 import org.joda.time.LocalTime;
 
-public class MyEvent implements Comparable {
-	public LocalTime time;
-	public int OID;
-	public int CID;
-	public EventType type;
+/**
+ * Help class having exit time and moving_obj in order to rank them
+ * 
+ * @author xiaohui
+ * 
+ */
+public class TimeObject implements Comparable {
 
-	public MyEvent(LocalTime time, int OID, int CID, EventType type) {
+	public LocalTime time;
+	public MovingObject mo;
+
+	public TimeObject(LocalTime time, MovingObject mo) {
 		this.time = time;
-		this.OID = OID;
-		this.CID = CID;
-		this.type = type;
+		this.mo = mo;
 	}
 
 	@Override
