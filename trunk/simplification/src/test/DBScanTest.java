@@ -30,7 +30,7 @@ public class DBScanTest {
 			objs.add(mo1);
 		}
 		
-		DBScan.doDBScan(objs, 1.0, 3);
+//		DBScan.doDBScan(objs, 1.0, 3);
 		
 		for(MovingObject o : objs){
 			System.out.println(o.toString());

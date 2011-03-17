@@ -65,13 +65,14 @@ public class Data {
 					+ timeTo
 					+ "') as p(routeid int8, mpx text, mpy text, time time, stamp timestamp, time0 bigint)";
 		} else if (type == 0) {
-			select = "select * from simpl_get_defined_routes_t('"
+			select = "select * from "
 					+ tbName
-					+ "', '"
+					+ " where time between '"
 					+ timeFrom
-					+ "', '"
+					+ "' and '"
 					+ timeTo
-					+ "') as p(routeid int8, mpx text, mpy text, time time, stamp timestamp, time0 bigint)";
+					+ "' order by routeid, time";
+				System.out.println(select);
 		}
 		PreparedStatement ps = null;
 		ResultSet result = null;
@@ -103,8 +104,8 @@ public class Data {
 			LocalTime aTime = new LocalTime(result.getString("time"));
 			LocalDateTime dateTime = new LocalDateTime(result
 					.getString("stamp").replace(" ", "T"));
-			double vx = result.getFloat("vx");
-			double vy = result.getFloat("vy");
+			double vx = result.getFloat("xv");
+			double vy = result.getFloat("yv");
 
 			DataPoint dp = new DataPoint(routeId, c, vx, vy, aTime, dateTime,
 					result.getInt("time0"));
