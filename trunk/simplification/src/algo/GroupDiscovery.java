@@ -13,6 +13,7 @@ import data.Data;
 import data.DataPoint;
 import entity.Candidates;
 import entity.Cluster;
+import entity.CombinationGenerator;
 import entity.EventType;
 import entity.Global;
 import entity.MovingObject;
@@ -21,8 +22,9 @@ import entity.TimeObject;
 import entity.Velocity;
 
 /**
+ * TODO 1. update event queue
  * 
- * @author xiaohui TODO 1. update event queue
+ * @author xiaohui
  * 
  */
 public class GroupDiscovery {
@@ -30,8 +32,9 @@ public class GroupDiscovery {
 	// map id to movingObjects
 	static HashMap<Integer, MovingObject> allObjs = new HashMap<Integer, MovingObject>();
 	// assume we also have a container for all objects
-	static ArrayList<MovingObject> objects = new ArrayList<MovingObject>();
+	static ArrayList<MovingObject> OBJ = new ArrayList<MovingObject>();
 	static Candidates R;
+
 	// map id to clusters
 	static HashMap<Integer, Cluster> CS = new HashMap<Integer, Cluster>();
 	static PriorityQueue<MyEvent> eventQ = new PriorityQueue<MyEvent>();
@@ -52,20 +55,11 @@ public class GroupDiscovery {
 	 * Fill up clusters hashmap; <br>
 	 * fill up eventQ
 	 */
-	private static void buildClusters() {
-		DBScan.doDBScan(objects, eps, minPts, currTime);
+	private static void ClusterObjects() {
+		DBScan.doDBScan(OBJ, eps, minPts, currTime);
 		Cluster tempC;
 
-		// //get core objects
-		// ArrayList<MovingObject> coreObjs = new
-		// ArrayList<MovingObject>(objects.size());
-		// for (MovingObject tempMo : objects) {
-		// if (tempMo.cid > 0 && tempMo.label){
-		// coreObjs.add(tempMo);
-		// }
-		// }
-
-		for (MovingObject mo : objects) {
+		for (MovingObject mo : OBJ) {
 			if (mo.cid > 0) {
 				tempC = CS.get(mo.cid);
 				if (tempC == null) {
@@ -90,13 +84,13 @@ public class GroupDiscovery {
 		}
 
 		// process noise objects
-		for (MovingObject mo : objects) {
+		for (MovingObject mo : OBJ) {
 			if (mo.cid == -1) {
 				// insert join event for noise objects
+				// range search for core objects
 				// find the soonest cluster to join
 				double range = 5 * eps;
-				ArrayList<MovingObject> nei = DBScan.rangeQuery(mo, objects,
-						range);
+				ArrayList<MovingObject> nei = DBScan.rangeQuery(mo, OBJ, range);
 				LocalTime minTime = null;
 				Cluster c = null;
 				for (MovingObject tempMo : nei) {
@@ -123,17 +117,36 @@ public class GroupDiscovery {
 		Cluster tempC;
 		for (Integer i : CS.keySet()) {
 			tempC = CS.get(i);
-			String[] combinations = getCombination(tempC, minPts);
-			aTrie.insertNewCluster(combinations);
+			for (int numEle = minPts; numEle < tempC.members.size(); numEle++) {
+				String[] combinations = getCombination(tempC, minPts);
+				aTrie.insert(combinations, currTime);
+			}
 		}
 	}
 
-	private static String[] getCombination(Cluster aCluster, int minPts2) {
-		// ArrayList<Integer> ints = aCluster.members;
+	static String[] getCombination(Cluster aCluster, int r) {
+
 		Collections.sort(aCluster.members);
-		Integer[] ints = aCluster.members.toArray(new Integer[aCluster.members
-				.size()]);
-		return null;
+		int memSize = aCluster.members.size();
+		Integer[] elements = aCluster.members.toArray(new Integer[memSize]);
+
+		CombinationGenerator combGen = new CombinationGenerator(
+				aCluster.members.size(), r);
+
+		String[] resArr = new String[combGen.getTotal().intValue()];
+		int counter = 0;
+		StringBuffer combination;
+		int[] indices;
+		while (combGen.hasMore()) {
+			combination = new StringBuffer();
+			indices = combGen.getNext();
+			for (int i = 0; i < indices.length; i++) {
+				combination.append(elements[indices[i]]);
+			}
+			// System.out.println(combination.toString());
+			resArr[counter++] = combination.toString();
+		}
+		return resArr;
 	}
 
 	private static LocalTime getEnterTime(int range, MovingObject noiseObj,
@@ -162,13 +175,13 @@ public class GroupDiscovery {
 		ArrayList<MovingObject> objMembers = new ArrayList<MovingObject>(
 				aCluster.members.size());
 		for (Integer i : aCluster.members) {
-			objMembers.add(objects.get(i));
+			objMembers.add(OBJ.get(i));
 		}
 		for (MovingObject mo : objMembers) {
 			if (mo.label) {
 				// retrieve neighbors for the core object
-				ArrayList<MovingObject> neighbors = DBScan.rangeQuery(mo,
-						objects, eps);
+				ArrayList<MovingObject> neighbors = DBScan.rangeQuery(mo, OBJ,
+						eps);
 				TimeObject[] tos = new TimeObject[neighbors.size()];
 				int counter = 0;
 				// order them by exit time
@@ -275,68 +288,18 @@ public class GroupDiscovery {
 			MovingObject mo = new MovingObject(dp.routeId, dp, new Velocity(
 					dp.vx, dp.vy));
 			allObjs.put(mo.oid, mo);
-			objects.add(mo);
+			OBJ.add(mo);
 		}
 	}
 
-	static void insert(ArrayList<Integer> U) {
-		// fill up G
-		ArrayList<Integer> G = new ArrayList<Integer>();
-		for (Integer i : U) {
-			MovingObject mo = allObjs.get(i);
-			ArrayList<MovingObject> L = DBScan.rangeQuery(mo, objects, eps);
-			for (MovingObject tempMO : L) {
-
-				if (tempMO.cid != 0 && tempMO.cid != -1) {
-					G.add(tempMO.oid);
-				}
-			}
-		}
-		// rebuild with objects from U and G
-		Rebuild(U, G);
-	}
-
-	static void process() {
-		if (currTime.equals(Global.MINTIME)) {
-			// put obj into their clusters
-
-		} else {
-			/**
-			 * 2. deal with disappearing objects 3. deal with incoming objects
-			 * */
-			while (!eventQ.isEmpty() && eventQ.peek().time.isBefore(currTime)) {
-				MyEvent evt = eventQ.poll();
-				Cluster cluster = CS.get(evt.CID);
-				// double duration = currTime - cluster.startTime;
-				// cluster.updateScore(alpha, beta, gamma, duration);
-
-				// check if cluster is a true candidate
-				checkCandidate(cluster);
-
-				// remove cluster id for each object
-				ArrayList<Integer> U = new ArrayList<Integer>();
-				for (int i : cluster.members) {
-					allObjs.get(i).cid = 0;
-					U.add(i);
-				}
-
-				// add noises into U
-				for (MovingObject o : objects) {
-					if (o.cid == -1) {
-						U.add(o.oid);
-					}
-				}
-
-				insert(U);
-
-			}
-		}
-	}
-
-	// time goes second by second
+	// time goes by gap variable
 	// at every second if some events occur, process
 	// otherwise go to next iteration
 	public static void main(String[] args) throws Exception {
+
+	}
+
+	public static void doGroupDiscovery() throws Exception {
 		// get a big chunk of data from database
 		int gap = 10; // how long is a chunk (min)
 
@@ -357,21 +320,135 @@ public class GroupDiscovery {
 				System.out.println("system starts...");
 				// start of the tracing
 				fillup(hm);
-
 				// 1. doDBScan
 				// 2. fill up CS
 				ClusterObjects();
-			}
+			} else {
+				// process these data
+				while (!eventQ.isEmpty()
+						&& eventQ.peek().time.isBefore(currTime)) {
+					MyEvent evt = eventQ.poll();
+					Cluster cluster = CS.get(evt.CID);
+					MovingObject mo = allObjs.get(evt.OID);
+					ArrayList<Integer> U = new ArrayList<Integer>();
+					// double duration = currTime - cluster.startTime;
+					// cluster.updateScore(alpha, beta, gamma, duration);
 
-			// process these data
-			process();
-			currTime.plusMinutes(1);
+					// check if cluster is a true candidate; TODO in trie update
+					// checkCandidate(cluster);
+					Trie.update(evt, R);
+
+					if (evt.type == EventType.EXIT) {
+						cluster.delete(mo.oid);
+						mo.cid = 0;
+						U.add(mo.oid);
+						Insert(U);
+					} else if (evt.type == EventType.JOIN) {
+						cluster.add(mo.oid);
+						mo.cid = cluster.clusterId;
+						U.remove(mo);
+						LocalTime t = getExitTime(mo, cluster);
+						MyEvent event = new MyEvent(t, mo.oid,
+								cluster.clusterId, EventType.EXIT);
+						eventQ.add(event);
+					} else if (evt.type == EventType.EXPIRE) {
+						MovingObject tempMo;
+						for (int i : cluster.members) {
+							// remove cluster id for each object
+							tempMo = allObjs.get(i);
+							tempMo.cid = 0;
+							U.add(tempMo.oid);
+						}
+						Insert(U);
+					}
+				}
+			}
+			currTime.plusMinutes(gap);
 		}
 	}
 
-	private static void ClusterObjects() {
+	/**
+	 * 
+	 * @param mo
+	 * @param cluster
+	 * @return the core object that longest together time
+	 */
+	private static LocalTime getExitTime(MovingObject mo, Cluster cluster) {
+		MovingObject tempMo;
+		LocalTime minTime = null;
+		for (Integer i : cluster.members) {
+			tempMo = OBJ.get(i);
+			if (tempMo.label && tempMo.distance(mo) <= eps) {
+				LocalTime t = DBScan.getExitTime(eps, mo, tempMo, currTime);
+				if (minTime == null || minTime.isBefore(t)) {
+					minTime = t;
+				}
+			}
+		}
+		return minTime;
+	}
+
+	/**
+	 * 
+	 * @param u2
+	 * @param oBJ2
+	 * @param eps2
+	 * @param minPts2
+	 * @param tau2
+	 * @param r2
+	 */
+	private static void Insert(ArrayList<Integer> U) {
+		ArrayList<Integer> G = new ArrayList<Integer>();
+		MovingObject mo;
+		for (Integer i : U) {
+			mo = allObjs.get(i);
+			ArrayList<MovingObject> L = DBScan.rangeQuery(mo, OBJ, eps);
+			for (MovingObject tempMo : L) {
+				if (tempMo.cid > 0) {
+					G.add(tempMo.oid);
+				}
+			}
+		}
+
+		for (Integer i : G) {
+			mo = allObjs.get(i);
+			Cluster c = CS.get(mo.cid);
+			ArrayList<MovingObject> L = DBScan.rangeQuery(mo, OBJ, eps);
+			if (L.size() >= minPts) {
+				L.remove(mo);
+				mo.label = true;
+				for (MovingObject tempMo : L) {
+					if (tempMo.cid <= 0) {
+						c.add(tempMo.oid);
+						tempMo.cid = c.clusterId;
+						aTrie.handleObjInsert(c, tempMo);
+						U.remove(new Integer(tempMo.oid));
+						DBScan.expandCluster(OBJ, tempMo, c.clusterId, eps,
+								minPts, currTime);
+					} else if (tempMo.cid != mo.cid && tempMo.label) {
+						Cluster c1 = CS.get(tempMo.cid);
+						aTrie.handleMerge(c1, c);
+						c = merge(c, c1);
+					}
+				}
+				LocalTime t = getExpireTime(c);
+				MyEvent e = new MyEvent(t, -1, c.clusterId, EventType.EXPIRE);
+				eventQ.add(e);
+			}
+		}
+		if (U.size() >= minPts) {
+			ClusterObjects(U);
+		}
+	}
+
+	private static void ClusterObjects(ArrayList<Integer> u) {
 		// TODO Auto-generated method stub
-		buildClusters();
+
+	}
+
+	private static Cluster merge(Cluster c, Cluster c1) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	/**
@@ -401,43 +478,6 @@ public class GroupDiscovery {
 		// double t = newCluster.getExpireTime();
 		// eventQ.add(new MyEvent(t, newCluster.clusterId));
 
-	}
-
-	/**
-	 * 
-	 * @param U
-	 * @param G
-	 */
-	private static void Rebuild(ArrayList<Integer> U, ArrayList<Integer> G) {
-		MovingObject mo;
-		ArrayList<MovingObject> L;
-		for (Integer i : G) {
-			mo = allObjs.get(i);
-
-			L = DBScan.rangeQuery(mo, objects, eps);
-			if (L.size() >= minPts) {
-				mo.label = true;
-				for (MovingObject o : L) {
-					if (o.cid <= 0) {
-						o.cid = mo.cid;
-						U.remove(o);
-						if (DBScan.expandCluster(objects, o, mo.cid, eps,
-								minPts, currTime)) {
-							// double time =
-							// clusters.get(mo.cid).getExpireTime();
-							// eventQ.add(new MyEvent(time, mo.cid));
-						}
-					} else if (o.cid != mo.cid && o.label) {
-						merge(mo.cid, o.cid);
-					}
-				}
-			}
-		}
-		if (U.size() >= minPts) {
-			// DBScan.doDBScan(U, eps, minPts, allObjs);
-			// put obj into their clusters
-			buildClusters(U);
-		}
 	}
 
 }

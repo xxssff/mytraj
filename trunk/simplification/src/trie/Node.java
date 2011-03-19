@@ -1,19 +1,55 @@
 package trie;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Node for Trie
+ * 
  * @author xiaohui
- *
+ * 
  */
 public class Node {
-	ArrayList<Node> children;
+	int id;
+	ArrayList<Edge> edges;
 	boolean isLeaf;
-	LeafEntry entry;
-	
-	public Node(){
-		
+	public LeafEntry entry;
+
+	public Node(int id) {
+		edges = null;
+		this.id = id;
 	}
 
+	public void insertChild(String s) {
+
+	}
+
+	public Edge getEdge(char ch) {
+		if (edges == null) {
+			return null;
+		}
+		for (Edge e : edges) {
+			if (e.label == ch) {
+				return e;
+			}
+		}
+		return null;
+	}
+
+	public void addEdge(Edge e) {
+		if (edges == null) {
+			edges = new ArrayList<Edge>();
+		}
+		edges.add(e);
+
+	}
+
+	public String toString() {
+		if (!isLeaf) {
+			return id + "";
+		} else {
+			return id + " leaf";
+		}
+	}
 }
