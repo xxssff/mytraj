@@ -7,7 +7,7 @@ package trie;
  * 
  */
 public class Edge {
-	char label;
+	String label;
 	// int fromNodeId, toNodeId;
 	Node fromNode, toNode;
 
@@ -17,7 +17,7 @@ public class Edge {
 	// this.toNodeId = toNodeId;
 	// }
 
-	public Edge(Node fromNode, Node toNode, char label) {
+	public Edge(Node fromNode, Node toNode, String label) {
 		this.fromNode = fromNode;
 		this.toNode = toNode;
 		this.label = label;

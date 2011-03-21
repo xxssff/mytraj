@@ -2,11 +2,13 @@ package entity;
 
 import java.util.ArrayList;
 
+import trie.LeafEntry;
+
 public class Candidates {
-	public ArrayList<Cluster> candidates;
+	public ArrayList<LeafEntry> candidates;
 	public double minScore;
 	public Candidates() {
-		candidates = new ArrayList<Cluster>();
+		candidates = new ArrayList<LeafEntry>();
 		minScore = Double.MAX_VALUE;
 	}
 	
@@ -15,7 +17,7 @@ public class Candidates {
 	 * @param score
 	 */
 	private void removeCandidates(double score) {
-		for(Cluster c : candidates){
+		for(LeafEntry c : candidates){
 			if(c.getScore() == score){
 				candidates.remove(c);
 			}
@@ -29,7 +31,7 @@ public class Candidates {
 	public void updateMinScore() {
 		removeCandidates(minScore);
 		double min = Double.MAX_VALUE;
-		for(Cluster c: candidates){
+		for(LeafEntry c: candidates){
 			if(c.getScore()<min){
 				min = c.getScore();
 			}
