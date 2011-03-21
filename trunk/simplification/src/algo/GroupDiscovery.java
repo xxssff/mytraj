@@ -51,6 +51,30 @@ public class GroupDiscovery {
 	static double alpha, beta, gamma;
 	static Trie aTrie;
 
+	private static void buildTrie() {
+		aTrie = new Trie();
+		Cluster tempC;
+		for (Integer i : CS.keySet()) {
+			tempC = CS.get(i);
+			for (int numEle = minPts; numEle < tempC.members.size(); numEle++) {
+				String[] combinations = getCombination(tempC, minPts);
+				aTrie.insert(combinations, currTime);
+			}
+		}
+	}
+
+	private static void ClusterObjects(ArrayList<Integer> U) {
+		// convert integer into movingobjects
+		MovingObject mo;
+		ArrayList<MovingObject> objList = new ArrayList<MovingObject>();
+		for (Integer i : U) {
+			mo = allObjs.get(i);
+			objList.add(mo);
+		}
+		DBScan.doDBScan(objList, eps, minPts, currTime);
+
+	}
+
 	/**
 	 * Fill up clusters hashmap; <br>
 	 * fill up eventQ
@@ -110,18 +134,6 @@ public class GroupDiscovery {
 
 		// process trie
 		buildTrie();
-	}
-
-	private static void buildTrie() {
-		aTrie = new Trie();
-		Cluster tempC;
-		for (Integer i : CS.keySet()) {
-			tempC = CS.get(i);
-			for (int numEle = minPts; numEle < tempC.members.size(); numEle++) {
-				String[] combinations = getCombination(tempC, minPts);
-				aTrie.insert(combinations, currTime);
-			}
-		}
 	}
 
 	static String[] getCombination(Cluster aCluster, int r) {
@@ -205,28 +217,28 @@ public class GroupDiscovery {
 		return resTime;
 	}
 
-	private static void buildClusters(ArrayList<Integer> u) {
-		Cluster tempC;
-		MovingObject mo;
-		for (Integer i : u) {
-			mo = allObjs.get(i);
-			if (mo.cid > 0) {
-				tempC = CS.get(mo.cid);
-
-				if (tempC == null) {
-					tempC = new Cluster(mo.cid);
-					CS.put(mo.cid, tempC);
-				}
-				tempC.add(mo.oid);
-			}
-		}
-		// fill in eventQ
-		for (int key : CS.keySet()) {
-			tempC = CS.get(key);
-
-			// eventQ.add(new MyEvent(t, key));
-		}
-	}
+	// private static void buildClusters(ArrayList<Integer> u) {
+	// Cluster tempC;
+	// MovingObject mo;
+	// for (Integer i : u) {
+	// mo = allObjs.get(i);
+	// if (mo.cid > 0) {
+	// tempC = CS.get(mo.cid);
+	//
+	// if (tempC == null) {
+	// tempC = new Cluster(mo.cid);
+	// CS.put(mo.cid, tempC);
+	// }
+	// tempC.add(mo.oid);
+	// }
+	// }
+	// // fill in eventQ
+	// for (int key : CS.keySet()) {
+	// tempC = CS.get(key);
+	//
+	// // eventQ.add(new MyEvent(t, key));
+	// }
+	// }
 
 	/**
 	 * If cluster is a candidate, put into R; R updates its minScore if
@@ -439,11 +451,6 @@ public class GroupDiscovery {
 		if (U.size() >= minPts) {
 			ClusterObjects(U);
 		}
-	}
-
-	private static void ClusterObjects(ArrayList<Integer> u) {
-		// TODO Auto-generated method stub
-
 	}
 
 	private static Cluster merge(Cluster c, Cluster c1) {
