@@ -25,12 +25,12 @@ public class Node {
 
 	}
 
-	public Edge getEdge(char ch) {
+	public Edge getEdge(String ch) {
 		if (edges == null) {
 			return null;
 		}
 		for (Edge e : edges) {
-			if (e.label == ch) {
+			if (e.label.equals(ch)) {
 				return e;
 			}
 		}
@@ -51,5 +51,9 @@ public class Node {
 		} else {
 			return id + " leaf";
 		}
+	}
+	
+	public void removeEdge(Edge e){
+		edges.remove(e);
 	}
 }

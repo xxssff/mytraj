@@ -6,7 +6,8 @@ import org.joda.time.LocalTime;
 
 /**
  * Moving objects can change their membership <br>
- * so a cluster keeps only id of its members
+ * so a cluster keeps only id of its members <br>
+ * For static candidate, refer to Candidate class
  * 
  * @author xiaohui
  * 
@@ -36,27 +37,11 @@ public class Cluster {
 		members.remove(moid);
 	}
 
-	
-
-	
+	/**
+	 * 
+	 * @return cluster size
+	 */
 	public int getSize() {
 		return members.size();
 	}
-
-	/**
-	 * 
-	 * compute ranking score
-	 */
-	public void updateScore(double alpha, double beta, double gamma,
-			double duration) {
-		this.duration = duration;
-		// TODO think about the compactness of a cluster
-		this.score = alpha * getSize() + beta * duration;
-	}
-
-	public double getScore() {
-		return score;
-	}
-	
-	
 }
