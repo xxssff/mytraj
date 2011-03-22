@@ -7,6 +7,7 @@ package data;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -20,11 +21,18 @@ import simplification.Database;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
+import entity.Global;
+
 /**
  * 
  * @author ceikute, xiaohui
  */
 public class Data {
+	Database db;
+
+	public Data() {
+		db = new Database();
+	}
 
 	public static String converTimeToString(LocalTime lt) {
 		String ret = lt.toString();
@@ -49,11 +57,10 @@ public class Data {
 	 *         time period
 	 * @throws Exception
 	 */
-	public static HashMap<Integer, ArrayList<DataPoint>> getDefinedTrajectories(
+	public HashMap<Integer, ArrayList<DataPoint>> getDefinedTrajectories(
 			String tbName, String timeFrom, String timeTo, int type)
 			throws Exception {
 
-		Database db = new Database();
 		String select = "";
 
 		if (type == 1) {
@@ -65,14 +72,10 @@ public class Data {
 					+ timeTo
 					+ "') as p(routeid int8, mpx text, mpy text, time time, stamp timestamp, time0 bigint)";
 		} else if (type == 0) {
-			select = "select * from "
-					+ tbName
-					+ " where time between '"
-					+ timeFrom
-					+ "' and '"
-					+ timeTo
+			select = "select * from " + tbName + " where time between '"
+					+ timeFrom + "' and '" + timeTo
 					+ "' order by routeid, time";
-				System.out.println(select);
+			System.out.println(select);
 		}
 		PreparedStatement ps = null;
 		ResultSet result = null;
@@ -115,9 +118,138 @@ public class Data {
 
 		ps.close();
 		result.close();
-		db.closeConnection();
 
 		return hm;
+	}
+
+	public void closeConnection() throws Exception {
+		db.closeConnection();
+	}
+
+	/**
+	 * 
+	 * @param routeId
+	 * @param lt
+	 * @return expected dataPoint of trajectory routeid at time lt
+	 * @throws Exception
+	 */
+	public DataPoint getExpectedDataPoint(int routeId, LocalTime lt)
+			throws Exception {
+
+		PreparedStatement ps = null;
+		ResultSet result, result1;
+		DataPoint dp = null;
+		DataPoint dp1 = null;
+
+		String select = "select * from " + Global.testTable + " where routeid="
+				+ routeId + " and time <'" + lt.toString() + "' limit 1";
+		System.out.println(select);
+		ps = db.getConnection().prepareStatement(select);
+		result = ps.executeQuery();
+		if (result.next()) {
+//			System.out.println("enter first");
+			Coordinate c = new Coordinate(Double.parseDouble(result
+					.getString("mpx")), Double.parseDouble(result
+					.getString("mpy")));
+			LocalDateTime dateTime = new LocalDateTime(result
+					.getString("stamp").replace(" ", "T"));
+			LocalTime aTime = new LocalTime(result.getString("time"));
+			double vx = result.getFloat("xv");
+			double vy = result.getFloat("yv");
+			dp = new DataPoint(routeId, c, vx, vy, aTime, dateTime,
+					result.getInt("time0"));
+			
+		}
+
+		// second point
+		String select1 = "select * from " + Global.testTable
+				+ " where routeid=" + routeId + " and time >'" + lt.toString()
+				+ "' limit 1";
+		System.out.println(select1);
+		ps = db.getConnection().prepareStatement(select1);
+		result1 = ps.executeQuery();
+		if (result1.next()) {
+//			System.out.println("enter second");
+			Coordinate c1 = new Coordinate(Double.parseDouble(result1
+					.getString("mpx")), Double.parseDouble(result1
+					.getString("mpy")));
+			LocalDateTime dateTime1 = new LocalDateTime(result1.getString(
+					"stamp").replace(" ", "T"));
+			LocalTime aTime1 = new LocalTime(result1.getString("time"));
+			double vx1 = result1.getFloat("xv");
+			double vy1 = result1.getFloat("yv");
+			dp1 = new DataPoint(routeId, c1, vx1, vy1, aTime1, dateTime1,
+					result1.getInt("time0"));
+		}
+		result.close();
+		result1.close();
+		if (dp != null && dp1 != null) {
+			return getImaginaryPoint(dp, dp1, lt);
+		}
+		return null;
+	}
+
+	/**
+	 * 
+	 * @param t1_p1
+	 * @param t1_p2
+	 * @param lt
+	 * @return expected data point between t1_p1 and t1_p2 for a trajectory t1
+	 */
+	private DataPoint getImaginaryPoint(DataPoint t1_p1, DataPoint t1_p2,
+			LocalTime lt) {
+		Seconds sec = null;
+		int secBetween = -1;
+
+		// LocalTime startStamp = new LocalTime(t1_p1.time);
+		// LocalTime currStamp = new LocalTime(p.time);
+
+		LocalTime startStamp = t1_p1.time;
+		LocalTime currStamp = lt;
+		sec = Seconds.secondsBetween(startStamp, currStamp);
+		secBetween = sec.getSeconds();
+
+		// handle midnight special case
+		if (secBetween < 0) {
+			// String[] date = t1_p1.dateTime.split(" ");
+			// LocalDate ld = new LocalDate(date[0]);
+			LocalDate ld = t1_p1.dateTime.toLocalDate();
+			ld = ld.plusDays(1);
+			String dateStr = ld.getYear() + "-"
+					+ fixDateOrTime(ld.getMonthOfYear()) + "-"
+					+ fixDateOrTime(ld.getDayOfMonth());
+			LocalDateTime midnight = new LocalDateTime(dateStr + "T00:00:00");
+			// DateTime p1 = new DateTime(t1_p1.dateTime.replace(" ", "T"));
+			LocalDateTime p1 = t1_p1.dateTime;
+
+			sec = Seconds.secondsBetween(p1, midnight);
+			secBetween = sec.getSeconds();
+			// DateTime p2 = new DateTime(p.dateTime.replace(" ", "T"));
+
+			// LocalDateTime p2 = p.dateTime;
+			sec = Seconds.secondsBetween(midnight, lt);
+			secBetween = secBetween + sec.getSeconds();
+		}
+
+		LocalDate ld = t1_p1.dateTime.toLocalDate();
+		String dateStr = ld.getYear() + "-"
+				+ fixDateOrTime(ld.getMonthOfYear()) + "-"
+				+ fixDateOrTime(ld.getDayOfMonth()) + "T" + lt.toString();
+
+		LocalDateTime ldt = new LocalDateTime(dateStr);
+
+		// compute the relative time
+		int time = t1_p1.time0 + secBetween;
+		System.out.println(t1_p1.time0+" vs "+t1_p2.time0);
+		double tau = (time - t1_p1.time0) / (t1_p2.time0 - t1_p1.time0);
+
+		double x = tau * (t1_p2.p.x - t1_p1.p.x) + t1_p1.p.x;
+		double y = tau * (t1_p2.p.y - t1_p1.p.y) + t1_p1.p.y;
+
+		DataPoint newP = new DataPoint(t1_p1.routeId, new Coordinate(x, y),
+				t1_p1.vx, t1_p1.vy, lt, ldt, time);
+
+		return newP;
 	}
 
 	/**
@@ -240,13 +372,35 @@ public class Data {
 	/**
 	 * 
 	 * @param time
-	 * @param hours
+	 *            - time from
+	 * @param minutes
+	 *            - number of minutes
 	 * @param type
+	 *            - 1 - date and time; 0 - time
 	 * @return new string of next time
 	 */
-	public static String getNewTime(LocalTime time, int hours, int type) {
-		String timestring = time.toString(); // toString returns "00:00:00.000"
-		timestring = timestring.substring(0, timestring.indexOf("."));
-		return getNewTime(timestring, hours, type);
+	public static String getNewTime(LocalTime time, int minutes, int type) {
+		String newTime = "";
+		LocalTime lt = new LocalTime(time);
+		lt = lt.plusMinutes(minutes);
+
+		newTime = fixDateOrTime(lt.getHourOfDay()) + ":"
+				+ fixDateOrTime(lt.getMinuteOfHour()) + ":"
+				+ fixDateOrTime(lt.getSecondOfMinute());
+
+		return newTime;
 	}
+
+	// /**
+	// *
+	// * @param time
+	// * @param hours
+	// * @param type
+	// * @return new string of next time
+	// */
+	// public static String getNewTime(LocalTime time, int hours, int type) {
+	// String timestring = time.toString(); // toString returns "00:00:00.000"
+	// timestring = timestring.substring(0, timestring.indexOf("."));
+	// return getNewTime(timestring, hours, type);
+	// }
 }

@@ -11,7 +11,7 @@ public class Global {
 		return CID++;
 	}
 
-	public static String MINTIME = "14:23:24";
-	public static String MAXTIME = "22:00:12";
-	public static String testTable = "simpl_trajectories_5";
+	public static String MINTIME = "16:23:24";
+	public static String MAXTIME = "17:01:17";
+	public static String testTable = "test_table";
 }

@@ -77,8 +77,15 @@ public class MovingObject {
 	}
 	
 	public String toString() {
-		return "[" + oid + " " + "(" + dataPoint.p.x + "," + dataPoint.p.y
-				+ "," + dataPoint.toString() + ") " + v + " " + cid + " "
+		return "[" + oid + "," + dataPoint.toString() + ") " + v + " " + cid + " "
 				+ label + "]";
+	}
+
+	/**
+	 * change moving object location
+	 * @param dataPoint
+	 */
+	public void setDataPoint(DataPoint dataPoint) {
+		this.dataPoint = dataPoint;
 	}
 }
