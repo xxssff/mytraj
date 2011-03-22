@@ -10,7 +10,7 @@ import entity.MovingObject;
 
 /**
  * 
- * @author xiaohui 
+ * @author xiaohui
  * 
  */
 public class DBScan {
@@ -103,8 +103,20 @@ public class DBScan {
 		double along = deltaVX * sinTheta + deltaVY * cosTheta;
 		double perpendicular = deltaVX * cosTheta + deltaVY * sinTheta;
 
-		return currTime.plusSeconds((int) Math.min(d1 / along, d2
-				/ perpendicular));
+		int alongTime = 0;
+		int perpenTime = 0;
+		if (along < 0) {
+			// increase along time
+			alongTime = (int) ((objDist + eps) / (-along));
+		} else {
+			alongTime = (int) (d1 / along);
+		}
+		if (perpendicular < 0) {
+			perpenTime = (int) (d2 / (-perpendicular));
+		} else {
+			perpenTime = (int) (d2 / perpendicular);
+		}
+		return currTime.plusSeconds((int) Math.min(alongTime, perpenTime));
 	}
 
 	/**
@@ -120,7 +132,8 @@ public class DBScan {
 		ArrayList<MovingObject> res = new ArrayList<MovingObject>();
 
 		for (MovingObject mo : objects) {
-			if (mo.distance(currMo) <= eps) {
+			double distance = mo.distance(currMo);
+			if (distance <= eps) {
 				res.add(mo);
 			}
 		}

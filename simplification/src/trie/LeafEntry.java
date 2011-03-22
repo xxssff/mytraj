@@ -1,6 +1,7 @@
 package trie;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 import org.joda.time.LocalTime;
@@ -12,7 +13,7 @@ import org.joda.time.LocalTime;
  * 
  */
 public class LeafEntry {
-	public ArrayList<Integer> subCluster;
+	public String[] subCluster;
 	public LocalTime ts, te;
 	double duration;
 	double score;
@@ -37,10 +38,9 @@ public class LeafEntry {
 		this.duration = endMin - sMin + (endSec - sSec) / 60.0;
 	}
 	
-	public LeafEntry(ArrayList<Integer> cMembers, LocalTime currTime) {
+	public LeafEntry(String[] members, LocalTime currTime) {
 		this.ts = currTime;
-		subCluster = new ArrayList<Integer>(cMembers);
-		Collections.copy(subCluster, cMembers);
+		this.subCluster = members;
 	}
 
 	/**
@@ -57,11 +57,11 @@ public class LeafEntry {
 	}
 
 	public String toString() {
-		return "[leafEntry: " + " " + ts.toString() + " " + subCluster + "]";
+		return "[leafEntry: " + " " + ts.toString() + " " + Arrays.toString(subCluster) + "]";
 	}
 
 	public int size() {
-		return subCluster.size();
+		return subCluster.length;
 	}
 
 	

@@ -27,5 +27,9 @@ public class MyEvent implements Comparable {
 		}
 		return 0;
 	}
+	
+	public String toString(){
+		return "("+time.toString()+" "+ OID+" "+CID+" "+type+")";
+	}
 
 }

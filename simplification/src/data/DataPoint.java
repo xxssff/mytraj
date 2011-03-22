@@ -33,7 +33,7 @@ public class DataPoint {
 
 	public String toString() {
 		return "[DataPoint: " + routeId + ", " + p.toString() + ", "
-				+ time.toString() + "]";
+				+ time.toString() + " "+ time0+"]";
 	}
 
 }
