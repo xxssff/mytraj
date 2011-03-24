@@ -5,8 +5,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.joda.time.LocalTime;
@@ -24,7 +27,6 @@ import entity.Global;
 import entity.MovingObject;
 import entity.MyEvent;
 import entity.TimeObject;
-import entity.Velocity;
 
 /**
  * 
@@ -50,6 +52,8 @@ public class GroupDiscovery {
 	static LocalTime maxTime = new LocalTime(Global.MAXTIME);
 
 	static Data dataSource = new Data();
+	// hm hold data points of current chunk
+	static HashMap<Integer, ArrayList<DataPoint>> hm;
 
 	static int eps = 40;
 	static int minPts = 3;
@@ -70,7 +74,7 @@ public class GroupDiscovery {
 
 		// fill CS with new cluster
 		Cluster tempC;
-		ArrayList<Integer> newClusters = new ArrayList<Integer>();
+		Set<Integer> newClusters = new HashSet<Integer>();
 		for (MovingObject tempMo : objList) {
 			if (tempMo.cid > 0) {
 				newClusters.add(tempMo.cid);
@@ -93,7 +97,8 @@ public class GroupDiscovery {
 			tempC = CS.get(i);
 			Breaker b = getExpireTime(tempC);
 			tempC.expiryTime = b.time;
-			eventQ.add(new MyEvent(b.time, b.moid, tempC.clusterId, EventType.EXPIRE));
+			eventQ.add(new MyEvent(b.time, b.moid, tempC.clusterId,
+					EventType.EXPIRE));
 		}
 	}
 
@@ -139,7 +144,8 @@ public class GroupDiscovery {
 			}
 			Breaker b = getExpireTime(tempC);
 			tempC.expiryTime = b.time;
-			eventQ.add(new MyEvent(b.time, b.moid, tempC.clusterId, EventType.EXPIRE));
+			eventQ.add(new MyEvent(b.time, b.moid, tempC.clusterId,
+					EventType.EXPIRE));
 		}
 
 		// process noise objects
@@ -224,8 +230,8 @@ public class GroupDiscovery {
 		double sinTheta = deltaX / Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 		double cosTheta = Math.sqrt(1 - sinTheta * sinTheta);
 
-		double deltaVX = noiseObj.v.getVx() - coreObj.v.getVx();
-		double deltaVY = noiseObj.v.getVy() - coreObj.v.getVy();
+		double deltaVX = noiseObj.getVx() - coreObj.getVx();
+		double deltaVY = noiseObj.getVy() - coreObj.getVy();
 		double along = deltaVX * sinTheta + deltaVY * cosTheta;
 
 		return refTime.plusSeconds((int) (objDist / along));
@@ -254,11 +260,17 @@ public class GroupDiscovery {
 				for (MovingObject neighbor : neighbors) {
 					LocalTime time = DBScan.getExitTime(eps, neighbor, mo,
 							currTime);
+					if (time == null) {
+						// no exit in near future
+						// add one year to currTime
+						time = currTime.plusHours(3);
+					}
 					tos[counter++] = new TimeObject(time, neighbor);
 				}
 				Arrays.sort(tos);
 				// get the m-2's exit time as expiry time
-				System.out.println(mo.oid + " time: " + tos[minPts - 2].time);
+				System.out.println(mo.oid + " expire time: "
+						+ tos[minPts - 2].time);
 				if (first) {
 					breaker.time = tos[minPts - 2].time;
 					breaker.moid = mo.oid;
@@ -360,11 +372,21 @@ public class GroupDiscovery {
 		for (Integer i : hm.keySet()) {
 			DataPoint dp = hm.get(i).get(0); // first data point
 			// // oid = routeid
-			MovingObject mo = new MovingObject(dp.routeId, dp, new Velocity(
-					dp.vx, dp.vy));
+			MovingObject mo = new MovingObject(dp.routeId, dp);
 			allObjs.put(mo.oid, mo);
 			OBJ.add(mo);
+
+			// init eventQ
+			ArrayList<DataPoint> dps = hm.get(i);
+			Iterator<DataPoint> ite = dps.iterator();
+			ite.next(); // ignore the first dp
+
+			while (ite.hasNext())
+				dp = ite.next();
+			MyEvent e = new MyEvent(dp.time, dp.routeId, -1, EventType.UPDATE);
+			eventQ.add(e);
 		}
+
 	}
 
 	// time goes by gap variable
@@ -389,12 +411,11 @@ public class GroupDiscovery {
 
 	public static void doGroupDiscovery() throws Exception {
 		// get a big chunk of data from database
-		int gap = 20; // how long is a chunk (min)
+		int gap = 10; // how long is a chunk (min)
 		boolean readChunk = false;
-		HashMap<Integer, ArrayList<DataPoint>> hm = null;
 
 		while (nextReadTime.isBefore(maxTime)) {
-			System.out.println(nextReadTime.toString());
+			System.out.println("nextRead time: " + nextReadTime.toString());
 
 			/**
 			 * 1. Assume there are >=m objects at the beginning<br>
@@ -403,26 +424,34 @@ public class GroupDiscovery {
 			 */
 			if (nextReadTime.equals(new LocalTime(Global.MINTIME))) {
 				// initial run
-				System.out.println("system starts...");
 				String nextTimeStr = Data.getNewTime(nextReadTime, gap, 0);
 				String currTimeStr = Data.converTimeToString(nextReadTime);
 				hm = dataSource.getDefinedTrajectories(Global.testTable,
 						currTimeStr, nextTimeStr, 0);
 				// start of the tracing
 				fillup(hm);
-				System.out.println("hm size: " + hm.size());
-				for (Integer i : hm.keySet()) {
-					ArrayList<DataPoint> pt = hm.get(i);
-					System.out.println(pt);
-				}
+				// System.out.println("hm size: " + hm.size());
+				// for (Integer i : hm.keySet()) {
+				// ArrayList<DataPoint> pt = hm.get(i);
+				// System.out.println(pt);
+				// }
 
 				// 1. doDBScan
 				// 2. fill up CS
 				ClusterObjects();
 				// System.out.println("CS size:" + CS.size());
 				nextReadTime = nextReadTime.plusMinutes(gap);
+
+				System.out.println();
+				System.out.println("After init:");
+				printMutalDistance();
+				printCluster();
+				printEventQ();
+				System.out.println();
+
 			} else if (readChunk) {
 				// read from database
+				System.err.println("Reading next chunk...");
 				String nextTimeStr = Data.getNewTime(nextReadTime, gap, 0);
 				String currTimeStr = Data.converTimeToString(nextReadTime);
 				hm = dataSource.getDefinedTrajectories(Global.testTable,
@@ -433,139 +462,222 @@ public class GroupDiscovery {
 				// process these data
 				while (!eventQ.isEmpty()
 						&& eventQ.peek().time.isBefore(nextReadTime)) {
-					currTime = eventQ.peek().time;
 					// move time to event time
-					for (MovingObject mo : OBJ) {
+					currTime = eventQ.peek().time;
+					System.out.println("curr Time: " + currTime);
+
+					// process other events
+					// start by locating moving objects
+					for (MovingObject tempMo : OBJ) {
 						// get expected position
-						DataPoint dp = dataSource.getExpectedDataPoint(mo.oid,
+						// System.out.println(tempMo.oid+" prev:"+tempMo.getX()+","+
+						// tempMo.getY());
+						DataPoint dp = getExpectedDataPoint(tempMo.oid,
 								currTime);
-						mo.setDataPoint(dp);
+						tempMo.setDataPoint(dp);
 					}
 
-					MyEvent evt = eventQ.poll();
-					Cluster cluster = CS.get(evt.CID);
-					MovingObject mo = allObjs.get(evt.OID);
 					ArrayList<Integer> U = new ArrayList<Integer>();
-					// copy noise and unclassified data into U
+					// insert noise and unclassified data into U
 					for (MovingObject tempMo : OBJ) {
 						if (tempMo.cid <= 0) {
 							U.add(tempMo.oid);
 						}
 					}
 
-					// double duration = currTime - cluster.startTime;
-					// cluster.updateScore(alpha, beta, gamma, duration);
+					// process location updates
+					MyEvent evt = eventQ.poll();
+					MovingObject mo = allObjs.get(evt.OID);
+					Cluster cluster = CS.get(evt.CID);
 
-					// check if cluster is a true candidate;
-
-					// order of insert/deletion and updateTrie is important
-					if (evt.type == EventType.EXIT) {
-						updateTrie(evt);
-						cluster.delete(mo.oid);
-						mo.cid = 0;
-						U.add(mo.oid);
-						Insert(U);
-					} else if (evt.type == EventType.JOIN) {
-						cluster.add(mo.oid);
-						updateTrie(evt);
-
-						mo.cid = cluster.clusterId;
-						U.remove(mo);
-						LocalTime t = getExitTime(mo, cluster);
-						MyEvent event = new MyEvent(t, mo.oid,
-								cluster.clusterId, EventType.EXIT);
-						eventQ.add(event);
-					} else if (evt.type == EventType.EXPIRE) {
-						// check if the current cluster really needs to be
-						// rebuilt
-						ArrayList<MovingObject> L = DBScan.rangeQuery(mo, OBJ,
-								eps);
-						if (L.size() >= minPts) {
-							// re-compute the expire time
+					if (evt.type == EventType.UPDATE) {
+						// process update events
+						// ArrayList<DataPoint> dps = hm.get(evt.OID);
+						// for (DataPoint dp : dps) {
+						// if (dp.time.equals(currTime)) {
+						// mo.dataPoint = dp;
+						// }
+						// }
+						// update the cluster of mo
+						if (mo.cid > 0) {
 							Breaker b = getExpireTime(cluster);
+							// update eventQ
 							cluster.expiryTime = b.time;
-							eventQ.add(new MyEvent(b.time, b.moid, cluster.clusterId,
-									EventType.EXPIRE));
-						} else {
-							// get combinations for old cluster
-							// for each member, get its new member cluster
-							// intersect to detect those that are still
-							// traveling
-							// tgr
+							updateEventQ(cluster, b);
+						}
+						Insert(U);
+					} else {
+						// double duration = currTime - cluster.startTime;
+						// cluster.updateScore(alpha, beta, gamma, duration);
 
-							String[][] com1 = getCombination(cluster, minPts);
-							ArrayList<String[]> toBeDel = new ArrayList<String[]>(
-									com1.length * 2);
-							for (String[] sArr : com1) {
-								toBeDel.add(sArr);
-							}
-							for (int numEle = minPts + 1; numEle <= cluster.members
-									.size(); numEle++) {
-								String[][] combinations = getCombination(
-										cluster, numEle);
-								for (String[] sArr : combinations) {
+						// check if cluster is a true candidate;
+
+						// order of insert/deletion and updateTrie is important
+						if (evt.type == EventType.EXIT) {
+							updateTrie(evt);
+							cluster.delete(mo.oid);
+							mo.cid = 0;
+							U.add(mo.oid);
+							//TODO need to re-compute expire time?
+							Insert(U);
+						} else if (evt.type == EventType.JOIN) {
+							cluster.add(mo.oid);
+							updateTrie(evt);
+
+							mo.cid = cluster.clusterId;
+							U.remove(mo);
+							LocalTime t = getExitTime(mo, cluster);
+							MyEvent event = new MyEvent(t, mo.oid,
+									cluster.clusterId, EventType.EXIT);
+							eventQ.add(event);
+						} else if (evt.type == EventType.EXPIRE) {
+							// check if the current cluster really needs to be
+							// rebuilt
+							System.out.println("hanling expire event");
+							ArrayList<MovingObject> L = DBScan.rangeQuery(mo,
+									OBJ, eps);
+							System.out.println(mo.oid + " " + L.size());
+							// System.out.println(mo.oid);
+							// System.out.println("1049 and 1103 dist: "
+							// + mo.distance(allObjs.get(1103)));
+							if (L.size() >= minPts) {
+								// re-compute the expire time
+								Breaker b = getExpireTime(cluster);
+								cluster.expiryTime = b.time;
+								updateEventQ(cluster, b);
+
+							} else {
+								// get combinations for old cluster
+								// for each member, get its new member cluster
+								// intersect to detect those that are still
+								// traveling
+								// tgr
+
+								String[][] com1 = getCombination(cluster,
+										minPts);
+								ArrayList<String[]> toBeDel = new ArrayList<String[]>(
+										com1.length * 2);
+								for (String[] sArr : com1) {
 									toBeDel.add(sArr);
 								}
-							}
-							System.out
-									.println("tobedel size;" + toBeDel.size());
+								for (int numEle = minPts + 1; numEle <= cluster.members
+										.size(); numEle++) {
+									String[][] combinations = getCombination(
+											cluster, numEle);
+									for (String[] sArr : combinations) {
+										toBeDel.add(sArr);
+									}
+								}
+								System.out.println("tobedel size;"
+										+ toBeDel.size());
 
-							ArrayList<Integer> oldMems = new ArrayList<Integer>(
-									cluster.members);
-							Collections.copy(oldMems, cluster.members);
+								ArrayList<Integer> oldMems = new ArrayList<Integer>(
+										cluster.members);
+								Collections.copy(oldMems, cluster.members);
 
-							MovingObject tempMo;
-							for (int i : cluster.members) {
-								// remove cluster id for each object
-								tempMo = allObjs.get(i);
-								tempMo.cid = 0;
-								tempMo.label = false;
-								U.add(tempMo.oid);
-							}
-							// remove from CS
-							CS.remove(cluster.clusterId);
-							System.out.println("after expire, cs size"
-									+ CS.size());
-							System.out.println("U size:" + U.size());
-							Insert(U);
+								MovingObject tempMo;
+								for (int i : cluster.members) {
+									// remove cluster id for each object
+									tempMo = allObjs.get(i);
+									tempMo.cid = 0;
+									tempMo.label = false;
+									U.add(tempMo.oid);
+								}
+								// remove from CS
+								CS.remove(cluster.clusterId);
 
-							for (Integer i : oldMems) {
-								if (allObjs.get(i).cid > 0) {
-									ArrayList<Integer> newMem = CS.get(allObjs
-											.get(i).cid).members;
-									Collection<Integer> common = CollectionUtils
-											.intersection(oldMems, newMem);
-									String[][] sCommon = getCombination(common,
-											minPts);
-									for (String[] sArr : sCommon) {
-										int index = getIndex(sArr, toBeDel);
-										if (index != -1) {
-											toBeDel.set(index, null);
+								System.out.println("U size:" + U.size());
+								Insert(U);
+
+								for (Integer i : oldMems) {
+									if (allObjs.get(i).cid > 0) {
+										ArrayList<Integer> newMem = CS
+												.get(allObjs.get(i).cid).members;
+										Collection<Integer> common = CollectionUtils
+												.intersection(oldMems, newMem);
+										String[][] sCommon = getCombination(
+												common, minPts);
+										for (String[] sArr : sCommon) {
+											int index = getIndex(sArr, toBeDel);
+											if (index != -1) {
+												toBeDel.set(index, null);
+											}
 										}
 									}
 								}
-							}
 
-							// remove entry of toBeDeleted from trie
-							for (String[] sArr : toBeDel) {
-								if (sArr != null) {
-									LeafEntry le = aTrie.remove(sArr,
-											nextReadTime);
-									checkCandidate(le);
+								// remove entry of toBeDeleted from trie
+								for (String[] sArr : toBeDel) {
+									if (sArr != null) {
+										LeafEntry le = aTrie.remove(sArr,
+												nextReadTime);
+										checkCandidate(le);
+									}
 								}
 							}
-						} // end if
-					} // end else if
-				}// end while
-				if (eventQ.peek().time.isBefore(nextReadTime)) {
-					readChunk = true;
-				}
-			} // end else
+						} // end else if
+					}
+
+					System.out.println();
+					System.out.println("After event:");
+					printMutalDistance();
+					printCluster();
+					printEventQ();
+					System.out.println("===========");
+
+				}// end while eventQ isEmpty
+
+				readChunk = true;
+
+			} // end processing eventQ
 
 		}// end while
 
 		// close database connection
 		dataSource.closeConnection();
+	}
+
+	/**
+	 * update the eventQ when a cluster's expire time changes
+	 * 
+	 * @param cluster
+	 * @param b
+	 */
+	private static void updateEventQ(Cluster cluster, Breaker b) {
+		// iterate the eventQ for the cluster's expire event
+		Iterator<MyEvent> eventIte = eventQ.iterator();
+		MyEvent indexEvt = null;
+		while (eventIte.hasNext()) {
+			MyEvent evt = eventIte.next();
+			if (evt.type == EventType.EXPIRE && evt.CID == cluster.clusterId) {
+				indexEvt = evt;
+				break;
+			}
+		}
+		eventQ.remove(indexEvt);
+		cluster.expiryTime = b.time;
+		
+		MyEvent newEvt = new MyEvent(b.time, b.moid, cluster.clusterId,
+				EventType.EXPIRE);
+		eventQ.add(newEvt);
+	}
+
+	private static DataPoint getExpectedDataPoint(int routeId, LocalTime time) {
+		ArrayList<DataPoint> dPoints = hm.get(routeId);
+		DataPoint dp1 = dPoints.get(0);
+		DataPoint dp2 = dPoints.get(0);
+		for (DataPoint dp : dPoints) {
+			if (dp.time.equals((time))) {
+				return dp;
+			} else if (dp.time.isBefore(time)) {
+				dp1 = dp;
+			} else if (dp.time.isAfter(time)) {
+				dp2 = dp;
+				break;
+			}
+		}
+		DataPoint res = dataSource.getImaginaryPoint(dp1, dp2, time);
+		return res;
 	}
 
 	/**
@@ -655,7 +767,7 @@ public class GroupDiscovery {
 		for (Integer i : cluster.members) {
 			tempMo = OBJ.get(i);
 			if (tempMo.label && tempMo.distance(mo) <= eps) {
-				LocalTime t = DBScan.getExitTime(eps, mo, tempMo, nextReadTime);
+				LocalTime t = DBScan.getExitTime(eps, mo, tempMo, currTime);
 				if (minTime == null || minTime.isBefore(t)) {
 					minTime = t;
 				}
@@ -711,9 +823,12 @@ public class GroupDiscovery {
 						trieMergeCluster(c);
 					}
 				}
-				Breaker b= getExpireTime(c);
-				MyEvent e = new MyEvent(b.time, b.moid, c.clusterId, EventType.EXPIRE);
-				eventQ.add(e);
+
+				//handle expire time change due to insertion
+				Breaker b = getExpireTime(c);
+				if (b.time.isBefore(c.expiryTime)) {
+					updateEventQ(c, b);
+				}
 			}
 		}
 		if (U.size() >= minPts) {
@@ -759,35 +874,33 @@ public class GroupDiscovery {
 			OBJ.get(i).cid = c.clusterId;
 			c1.delete(i);
 		}
+		// delete c1 from CS
+		CS.remove(c1.clusterId);
 	}
 
-	// /**
-	// *
-	// * @param cid
-	// * @param cid2
-	// */
-	// static void merge(int cid1, int cid2) {
-	// Cluster c1 = CS.get(cid1);
-	// Cluster c2 = CS.get(cid2);
-	// if (c1.duration >= tau) {
-	// checkCandidate(c1);
-	// }
-	// if (c2.duration >= tau) {
-	// checkCandidate(c2);
-	// }
-	// Cluster newCluster = new Cluster(Global.nextCid());
-	// for (Integer i : c1.members) {
-	// newCluster.add(i);
-	// allObjs.get(i).cid = newCluster.clusterId;
-	// }
-	// for (Integer i : c2.members) {
-	// newCluster.add(i);
-	// allObjs.get(i).cid = newCluster.clusterId;
-	// }
-	//
-	// // double t = newCluster.getExpireTime();
-	// // eventQ.add(new MyEvent(t, newCluster.clusterId));
-	//
-	// }
+	static void printMutalDistance() {
+		int i = 0;
+		for (; i < OBJ.size(); i++) {
+			for (int j = i + 1; j < OBJ.size(); j++) {
+				MovingObject mo1 = OBJ.get(i);
+				MovingObject mo2 = OBJ.get(j);
+				System.out.println("Dist(" + mo1.oid + "," + mo2.oid + ")="
+						+ mo1.distance(mo2));
+			}
+		}
+	}
 
+	static void printCluster() {
+		for (Integer i : CS.keySet()) {
+			Cluster c = CS.get(i);
+			System.out.println("clus" + i + ":" + " " + c.members);
+		}
+	}
+
+	static void printEventQ() {
+		Iterator<MyEvent> ite = eventQ.iterator();
+		while (ite.hasNext()) {
+			System.out.println("evt: " + ite.next().toString());
+		}
+	}
 }

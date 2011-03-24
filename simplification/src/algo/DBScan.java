@@ -3,6 +3,8 @@ package algo;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import mathUtil.CoefficientsQuartic;
+
 import org.joda.time.LocalTime;
 
 import entity.Global;
@@ -85,38 +87,68 @@ public class DBScan {
 	 * @param currTime
 	 * @return exit time for currP
 	 */
+//	public static LocalTime getExitTime(double eps, MovingObject borderObj,
+//			MovingObject coreObj, LocalTime currTime) {
+//		// compute distances
+//		double objDist = borderObj.distance(coreObj);
+//		double d1 = eps - objDist;
+//		double d2 = Math.sqrt(eps * eps - objDist * objDist);
+//
+//		// compute velocities
+//		double deltaX = borderObj.getX() - coreObj.getX();
+//		double deltaY = borderObj.getY() - coreObj.getY();
+//		double sinTheta = deltaX / Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+//		double cosTheta = Math.sqrt(1 - sinTheta * sinTheta);
+//
+//		double deltaVX = borderObj.v.getVx() - coreObj.v.getVx();
+//		double deltaVY = borderObj.v.getVy() - coreObj.v.getVy();
+//		double along = deltaVX * sinTheta + deltaVY * cosTheta;
+//		double perpendicular = deltaVX * cosTheta + deltaVY * sinTheta;
+//
+//		int alongTime = 0;
+//		int perpenTime = 0;
+//		if (along < 0) {
+//			// increase along time
+//			alongTime = (int) Math.ceil((objDist + eps) / (-along));
+//		} else {
+//			alongTime = (int) Math.ceil((d1 / along));
+//		}
+//		if (perpendicular < 0) {
+//			perpenTime = (int) Math.ceil(d2 / (-perpendicular));
+//		} else {
+//			perpenTime = (int) Math.ceil(d2 / perpendicular);
+//		}
+//		return currTime.plusSeconds((int) Math.min(alongTime, perpenTime));
+//	}
+
 	public static LocalTime getExitTime(double eps, MovingObject borderObj,
 			MovingObject coreObj, LocalTime currTime) {
-		// compute distances
-		double objDist = borderObj.distance(coreObj);
-		double d1 = eps - objDist;
-		double d2 = Math.sqrt(eps * eps - objDist * objDist);
 
-		// compute velocities
-		double deltaX = borderObj.getX() - coreObj.getX();
-		double deltaY = borderObj.getY() - coreObj.getY();
-		double sinTheta = deltaX / Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-		double cosTheta = Math.sqrt(1 - sinTheta * sinTheta);
+		CoefficientsQuartic quad = new CoefficientsQuartic(borderObj.dataPoint,
+				coreObj.dataPoint, eps);
+		ArrayList<Double> roots = quad.solve();
 
-		double deltaVX = borderObj.v.getVx() - coreObj.v.getVx();
-		double deltaVY = borderObj.v.getVy() - coreObj.v.getVy();
-		double along = deltaVX * sinTheta + deltaVY * cosTheta;
-		double perpendicular = deltaVX * cosTheta + deltaVY * sinTheta;
-
-		int alongTime = 0;
-		int perpenTime = 0;
-		if (along < 0) {
-			// increase along time
-			alongTime = (int) ((objDist + eps) / (-along));
+		int sec = 1;
+		if (roots == null) {
+			//no exit in near future
+//			System.err.println("DBScan.getExitTime(): roots null");
+			return null;
 		} else {
-			alongTime = (int) (d1 / along);
+			if (roots.size() == 1) {
+				if(roots.get(0)<0){
+					return null;
+				}
+				sec = (int) Math.ceil(roots.get(0));
+			} else if (roots.size() == 2) {
+				//take the positive one
+				sec = (int) Math.max(Math.ceil(roots.get(0)),
+						Math.ceil(roots.get(1)));
+				if(sec<0){
+					return null;
+				}
+			}
 		}
-		if (perpendicular < 0) {
-			perpenTime = (int) (d2 / (-perpendicular));
-		} else {
-			perpenTime = (int) (d2 / perpendicular);
-		}
-		return currTime.plusSeconds((int) Math.min(alongTime, perpenTime));
+		return currTime.plusSeconds(sec);
 	}
 
 	/**

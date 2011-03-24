@@ -143,7 +143,7 @@ public class Data {
 
 		String select = "select * from " + Global.testTable + " where routeid="
 				+ routeId + " and time <'" + lt.toString() + "' limit 1";
-		System.out.println(select);
+//		System.out.println(select);
 		ps = db.getConnection().prepareStatement(select);
 		result = ps.executeQuery();
 		if (result.next()) {
@@ -165,7 +165,7 @@ public class Data {
 		String select1 = "select * from " + Global.testTable
 				+ " where routeid=" + routeId + " and time >'" + lt.toString()
 				+ "' limit 1";
-		System.out.println(select1);
+//		System.out.println(select1);
 		ps = db.getConnection().prepareStatement(select1);
 		result1 = ps.executeQuery();
 		if (result1.next()) {
@@ -196,7 +196,7 @@ public class Data {
 	 * @param lt
 	 * @return expected data point between t1_p1 and t1_p2 for a trajectory t1
 	 */
-	private DataPoint getImaginaryPoint(DataPoint t1_p1, DataPoint t1_p2,
+	public DataPoint getImaginaryPoint(DataPoint t1_p1, DataPoint t1_p2,
 			LocalTime lt) {
 		Seconds sec = null;
 		int secBetween = -1;
@@ -240,8 +240,8 @@ public class Data {
 
 		// compute the relative time
 		int time = t1_p1.time0 + secBetween;
-		System.out.println(t1_p1.time0+" vs "+t1_p2.time0);
-		double tau = (time - t1_p1.time0) / (t1_p2.time0 - t1_p1.time0);
+//		System.out.println(t1_p1.time0+" vs "+t1_p2.time0);
+		double tau = (double)secBetween / (t1_p2.time0 - t1_p1.time0);
 
 		double x = tau * (t1_p2.p.x - t1_p1.p.x) + t1_p1.p.x;
 		double y = tau * (t1_p2.p.y - t1_p1.p.y) + t1_p1.p.y;
