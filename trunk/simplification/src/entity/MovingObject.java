@@ -15,8 +15,7 @@ import data.DataPoint;
 
 public class MovingObject {
 	public int oid;
-	public DataPoint dataPoint; //has location and time
-	public Velocity v;
+	public DataPoint dataPoint; // has location and time
 	public boolean label; // {true=CORE, false=BORDER}
 	public int cid; // clusterID; -1 is noise; 0 is unclassified
 	public LocalTime exitTime;
@@ -24,15 +23,13 @@ public class MovingObject {
 	public MovingObject() {
 		oid = 0;
 		dataPoint = null;
-		v = null;
 		label = false;
 		cid = 0;
 	}
 
-	public MovingObject(int oid, DataPoint dataPoint, Velocity velocity) {
+	public MovingObject(int oid, DataPoint dataPoint) {
 		this.oid = oid;
 		this.dataPoint = dataPoint;
-		this.v = velocity;
 		this.label = false;
 		this.cid = 0;
 	}
@@ -45,14 +42,13 @@ public class MovingObject {
 	 * @param coordinate
 	 * @param velocity
 	 */
-	public MovingObject(int oid, int routeid, int time,
-			Coordinate coordinate, Velocity velocity) {
+	public MovingObject(int oid, int routeid, int time, Coordinate coordinate,
+			Velocity velocity) {
 		this.oid = oid;
 		this.dataPoint = new DataPoint();
 		this.dataPoint.p = coordinate;
 		this.dataPoint.routeId = routeid;
 		this.dataPoint.time0 = time;
-		this.v = velocity;
 		this.label = false;
 		this.cid = 0;
 	}
@@ -68,21 +64,30 @@ public class MovingObject {
 		return this.dataPoint.p.distance(aMo.dataPoint.p);
 	}
 
-	public double getX(){
+	public double getX() {
 		return this.dataPoint.p.x;
 	}
-	
-	public double getY(){
+
+	public double getY() {
 		return this.dataPoint.p.y;
 	}
-	
+
+	public double getVx() {
+		return this.dataPoint.vx;
+	}
+
+	public double getVy() {
+		return this.dataPoint.vy;
+	}
+
 	public String toString() {
-		return "[" + oid + "," + dataPoint.toString() + ") " + v + " " + cid + " "
+		return "[" + oid + "," + dataPoint.toString() + ")" + " " + cid + " "
 				+ label + "]";
 	}
 
 	/**
 	 * change moving object location
+	 * 
 	 * @param dataPoint
 	 */
 	public void setDataPoint(DataPoint dataPoint) {
