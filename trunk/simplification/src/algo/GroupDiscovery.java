@@ -12,7 +12,12 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.joda.time.LocalDate;
+import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
+import org.joda.time.Seconds;
+
+import com.vividsolutions.jts.geom.Coordinate;
 
 import trie.LeafEntry;
 import trie.Trie;
@@ -39,7 +44,7 @@ public class GroupDiscovery {
 	static HashMap<Integer, MovingObject> allObjs = new HashMap<Integer, MovingObject>();
 	// assume we also have a container for all objects
 	static ArrayList<MovingObject> OBJ = new ArrayList<MovingObject>();
-	static Candidates R;
+	static Candidates R = new Candidates();
 
 	// map id to clusters
 	static HashMap<Integer, Cluster> CS = new HashMap<Integer, Cluster>();
@@ -57,10 +62,12 @@ public class GroupDiscovery {
 
 	static int eps = 40;
 	static int minPts = 3;
-	static int tau = 180; // seconds
-	static int k = 5;
-	static double alpha, beta, gamma;
-	static Trie aTrie;
+	static int tau = 3; // seconds
+	static int k = 1;
+	static double alpha = 0.5;
+	static double beta = 0.5;
+	static double gamma = 0.5;
+	static Trie aTrie = new Trie();;
 
 	private static void ClusterObjects(ArrayList<Integer> U) {
 		// convert integer into movingobjects
@@ -179,12 +186,11 @@ public class GroupDiscovery {
 		}
 
 		// process trie
-		aTrie = new Trie();
 		for (Integer i : CS.keySet()) {
 			tempC = CS.get(i);
 			for (int numEle = minPts; numEle <= tempC.members.size(); numEle++) {
 				String[][] combinations = getCombination(tempC, numEle);
-				aTrie.insert(tempC.members, combinations, nextReadTime);
+				aTrie.insert(combinations, currTime);
 			}
 		}
 		// System.out.println(aTrie.toString());
@@ -312,16 +318,16 @@ public class GroupDiscovery {
 	// }
 
 	/**
-	 * If cluster is a candidate, put into R; R updates its minScore if
-	 * necessary
+	 * If leafEntry is a candidate, put into R <br>
+	 * R updates its minScore if necessary
 	 * 
 	 * @param cluster
 	 */
 	private static void checkCandidate(LeafEntry entry) {
 		entry.computeDuration();
-		entry.setScore(alpha, beta, gamma, entry.getDuration());
+		entry.setScore(alpha, beta, gamma);
 
-		if (entry.ts.plusMinutes(tau).isBefore(entry.te)) {
+		if (entry.ts.plusSeconds(tau).isBefore(entry.te)) {
 
 			// true candidate
 			if (R.candidates.size() < k) {
@@ -370,34 +376,41 @@ public class GroupDiscovery {
 	private static void fillup(HashMap<Integer, ArrayList<DataPoint>> hm) {
 		// i is routeid
 		for (Integer i : hm.keySet()) {
-			DataPoint dp = hm.get(i).get(0); // first data point
-			// // oid = routeid
-			MovingObject mo = new MovingObject(dp.routeId, dp);
-			allObjs.put(mo.oid, mo);
-			OBJ.add(mo);
-
-			// init eventQ
 			ArrayList<DataPoint> dps = hm.get(i);
+			DataPoint dp = dps.get(0); // first data point
+
+			// new objects come in
+			if (allObjs.get(dp.routeId) == null) {
+				// // oid = routeid
+				MovingObject mo = new MovingObject(dp.routeId, dp);
+				allObjs.put(mo.oid, mo);
+				OBJ.add(mo);
+			}
+
 			Iterator<DataPoint> ite = dps.iterator();
-			ite.next(); // ignore the first dp
-
-			while (ite.hasNext())
+			if (currTime.equals(new LocalTime(Global.MINTIME))) {
+				ite.next(); // ignore the first dp
+			}
+			// init eventQ
+			while (ite.hasNext()) {
 				dp = ite.next();
-			MyEvent e = new MyEvent(dp.time, dp.routeId, -1, EventType.UPDATE);
-			eventQ.add(e);
-		}
+				MyEvent e = new MyEvent(dp.time, dp.routeId, -1,
+						EventType.UPDATE);
+				eventQ.add(e);
+			}
 
+		}
 	}
 
 	// time goes by gap variable
 	// at every second if some events occur, process
 	// otherwise go to next iteration
 	public static void main(String[] args) throws Exception {
-		// Cluster c1 = new Cluster(1);
-		// c1.add(1);
-		// c1.add(2);
-		// c1.add(3);
-		// c1.add(4);
+		Cluster c1 = new Cluster(1);
+		// c1.add(1004);
+		// c1.add(1082);
+		// c1.add(1049);
+		// c1.add(1103);
 		//
 		// String[][] comm = getCombination(c1, 3);
 		// for (String[] com : comm)
@@ -444,10 +457,11 @@ public class GroupDiscovery {
 
 				System.out.println();
 				System.out.println("After init:");
-				printMutalDistance();
+				// printMutalDistance();
 				printCluster();
 				printEventQ();
-				System.out.println();
+				printTrie();
+				System.out.println("=========");
 
 			} else if (readChunk) {
 				// read from database
@@ -456,6 +470,12 @@ public class GroupDiscovery {
 				String currTimeStr = Data.converTimeToString(nextReadTime);
 				hm = dataSource.getDefinedTrajectories(Global.testTable,
 						currTimeStr, nextTimeStr, 0);
+
+				// insert new coming objects and
+				// location updates insert into eventQ
+				fillup(hm);
+				handleDisappear();
+
 				nextReadTime = nextReadTime.plusMinutes(gap);
 				readChunk = false;
 			} else {
@@ -488,7 +508,6 @@ public class GroupDiscovery {
 					// process location updates
 					MyEvent evt = eventQ.poll();
 					MovingObject mo = allObjs.get(evt.OID);
-					Cluster cluster = CS.get(evt.CID);
 
 					if (evt.type == EventType.UPDATE) {
 						// process update events
@@ -500,6 +519,7 @@ public class GroupDiscovery {
 						// }
 						// update the cluster of mo
 						if (mo.cid > 0) {
+							Cluster cluster = CS.get(mo.cid);
 							Breaker b = getExpireTime(cluster);
 							// update eventQ
 							cluster.expiryTime = b.time;
@@ -513,12 +533,13 @@ public class GroupDiscovery {
 						// check if cluster is a true candidate;
 
 						// order of insert/deletion and updateTrie is important
+						Cluster cluster = CS.get(evt.CID);
 						if (evt.type == EventType.EXIT) {
+
 							updateTrie(evt);
 							cluster.delete(mo.oid);
 							mo.cid = 0;
 							U.add(mo.oid);
-							//TODO need to re-compute expire time?
 							Insert(U);
 						} else if (evt.type == EventType.JOIN) {
 							cluster.add(mo.oid);
@@ -533,7 +554,7 @@ public class GroupDiscovery {
 						} else if (evt.type == EventType.EXPIRE) {
 							// check if the current cluster really needs to be
 							// rebuilt
-							System.out.println("hanling expire event");
+							System.out.println("handling expire event");
 							ArrayList<MovingObject> L = DBScan.rangeQuery(mo,
 									OBJ, eps);
 							System.out.println(mo.oid + " " + L.size());
@@ -565,11 +586,11 @@ public class GroupDiscovery {
 									String[][] combinations = getCombination(
 											cluster, numEle);
 									for (String[] sArr : combinations) {
-										toBeDel.add(sArr);
+										toBeDel.add(0, sArr);
 									}
 								}
-								System.out.println("tobedel size;"
-										+ toBeDel.size());
+								// System.out.println("tobedel size;"
+								// + toBeDel.size());
 
 								ArrayList<Integer> oldMems = new ArrayList<Integer>(
 										cluster.members);
@@ -586,9 +607,9 @@ public class GroupDiscovery {
 								// remove from CS
 								CS.remove(cluster.clusterId);
 
-								System.out.println("U size:" + U.size());
 								Insert(U);
 
+								// after re-clustering, check new clusters
 								for (Integer i : oldMems) {
 									if (allObjs.get(i).cid > 0) {
 										ArrayList<Integer> newMem = CS
@@ -610,7 +631,7 @@ public class GroupDiscovery {
 								for (String[] sArr : toBeDel) {
 									if (sArr != null) {
 										LeafEntry le = aTrie.remove(sArr,
-												nextReadTime);
+												currTime);
 										checkCandidate(le);
 									}
 								}
@@ -620,9 +641,11 @@ public class GroupDiscovery {
 
 					System.out.println();
 					System.out.println("After event:");
-					printMutalDistance();
+					// printMutalDistance();
 					printCluster();
 					printEventQ();
+					printTrie();
+					printR();
 					System.out.println("===========");
 
 				}// end while eventQ isEmpty
@@ -635,6 +658,25 @@ public class GroupDiscovery {
 
 		// close database connection
 		dataSource.closeConnection();
+	}
+
+	/**
+	 * handle disappearing objects
+	 */
+	private static void handleDisappear() {
+		ArrayList<Integer> toBeDel = new ArrayList<Integer>(allObjs.size());
+		for (Integer i : allObjs.keySet()) {
+			if (hm.get(i) == null) {
+				// obj_i can be removed
+				toBeDel.add(i);
+			}
+		}
+		for (Integer i : toBeDel) {
+			OBJ.remove(allObjs.get(i));
+			allObjs.remove(i);
+		}
+		
+		toBeDel = null;
 	}
 
 	/**
@@ -656,7 +698,7 @@ public class GroupDiscovery {
 		}
 		eventQ.remove(indexEvt);
 		cluster.expiryTime = b.time;
-		
+
 		MyEvent newEvt = new MyEvent(b.time, b.moid, cluster.clusterId,
 				EventType.EXPIRE);
 		eventQ.add(newEvt);
@@ -664,8 +706,29 @@ public class GroupDiscovery {
 
 	private static DataPoint getExpectedDataPoint(int routeId, LocalTime time) {
 		ArrayList<DataPoint> dPoints = hm.get(routeId);
+		System.out.println(dPoints);
 		DataPoint dp1 = dPoints.get(0);
 		DataPoint dp2 = dPoints.get(0);
+		if (dp1.time.isAfter(time)) {
+			// newly read chunk
+			// get expected data point with velocity
+			int secBetween = Seconds.secondsBetween(time, dp1.time)
+					.getSeconds();
+			LocalDate ld = dp1.dateTime.toLocalDate();
+			String dateStr = ld.getYear() + "-"
+					+ Data.fixDateOrTime(ld.getMonthOfYear()) + "-"
+					+ Data.fixDateOrTime(ld.getDayOfMonth()) + "T"
+					+ time.toString();
+
+			LocalDateTime ldt = new LocalDateTime(dateStr);
+			double x = dp1.p.x - dp1.vx * secBetween;
+			double y = dp1.p.y - dp1.vy * secBetween;
+
+			DataPoint newP = new DataPoint(dp1.routeId, new Coordinate(x, y),
+					dp1.vx, dp1.vy, time, ldt, dp1.time0 - secBetween);
+
+			return newP;
+		}
 		for (DataPoint dp : dPoints) {
 			if (dp.time.equals((time))) {
 				return dp;
@@ -824,7 +887,7 @@ public class GroupDiscovery {
 					}
 				}
 
-				//handle expire time change due to insertion
+				// handle expire time change due to insertion
 				Breaker b = getExpireTime(c);
 				if (b.time.isBefore(c.expiryTime)) {
 					updateEventQ(c, b);
@@ -843,7 +906,7 @@ public class GroupDiscovery {
 		String[][] strArr = getCombination(cluster, minPts);
 		for (String[] str : strArr) {
 			if (aTrie.getLeafEntry(str) == null) {
-				aTrie.insert(cluster.members, strArr, nextReadTime);
+				aTrie.insert(strArr, currTime);
 			}
 		}
 	}
@@ -902,5 +965,13 @@ public class GroupDiscovery {
 		while (ite.hasNext()) {
 			System.out.println("evt: " + ite.next().toString());
 		}
+	}
+
+	static void printR() {
+		System.out.println(R.toString());
+	}
+
+	static void printTrie() {
+		System.out.println(aTrie.toString());
 	}
 }

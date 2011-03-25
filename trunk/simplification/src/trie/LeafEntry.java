@@ -1,10 +1,10 @@
 package trie;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 
 import org.joda.time.LocalTime;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
 
 /**
  * LeafEntry for trie
@@ -17,27 +17,15 @@ public class LeafEntry {
 	public LocalTime ts, te;
 	double duration;
 	double score;
-	public void  computeDuration() {
-		int sHour = te.getHourOfDay();
-		int sMin = te.getMinuteOfHour();
-		int sSec = te.getSecondOfMinute();
 
-		int endHour = te.getHourOfDay();
-		int endMin = te.getMinuteOfHour();
-		int endSec = te.getSecondOfMinute();
-
-		while (endHour < sHour) {
-			endHour += 12;
-		}
-
-		endMin += 60 * (endHour - sHour);
-		if (endSec < sSec) {
-			endMin--;
-			endSec += 60;
-		}
-		this.duration = endMin - sMin + (endSec - sSec) / 60.0;
+	/**
+	 * compute Duration And Score of this entry
+	 */
+	public void computeDuration() {
+		Period p = new Period(ts, te);
+		this.duration = p.toStandardSeconds().getSeconds();
 	}
-	
+
 	public LeafEntry(String[] members, LocalTime currTime) {
 		this.ts = currTime;
 		this.subCluster = members;
@@ -51,27 +39,30 @@ public class LeafEntry {
 	public double getScore() {
 		return score;
 	}
-	
-	public double getDuration(){
+
+	public double getDuration() {
 		return duration;
 	}
 
 	public String toString() {
-		return "[leafEntry: " + " " + ts.toString() + " " + Arrays.toString(subCluster) + "]";
+		if (te == null) {
+			return "[leafEntry: " + " " + ts.toString() + " "
+					+ Arrays.toString(subCluster) + "]";
+		} else {
+			return "[score Te Ts Mems: " + score + " " + ts.toString() + " "
+					+ te.toString() + Arrays.toString(subCluster) + "]";
+		}
 	}
 
 	public int size() {
 		return subCluster.length;
 	}
 
-	
-
 	/**
 	 * 
 	 * compute ranking score
 	 */
-	public void setScore(double alpha, double beta, double gamma,
-			double duration) {
+	public void setScore(double alpha, double beta, double gamma) {
 		// TODO think about the compactness of a cluster
 		this.score = alpha * size() + beta * duration;
 	}
