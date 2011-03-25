@@ -12,11 +12,14 @@ import java.util.Set;
  */
 public class Node {
 	int id;
+	Edge pEdge; //parent edge
 	ArrayList<Edge> edges;
 	boolean isLeaf;
 	public LeafEntry entry;
-
-	public Node(int id) {
+	
+	
+	public Node(int id, Edge pEdge) {
+		this.pEdge = pEdge;
 		edges = null;
 		this.id = id;
 	}

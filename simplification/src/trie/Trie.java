@@ -22,7 +22,7 @@ public class Trie {
 	int numPaths;
 
 	public Trie() {
-		root = new Node(nid++);
+		root = new Node(nid++, null); // root does not have pEdge
 		numPaths = 0;
 	}
 
@@ -72,8 +72,9 @@ public class Trie {
 			String ch = strArr[i];
 			Edge e = pNode.getEdge(ch);
 			if (e == null) {
-				cNode = new Node(nid++);
-				e = new Edge(pNode, cNode, ch);
+				e = new Edge(pNode, null, ch);
+				cNode = new Node(nid++, e);
+				e.setToNode(cNode);
 				pNode.addEdge(e);
 				pNode = cNode;
 			} else {
@@ -82,16 +83,13 @@ public class Trie {
 				pNode = e.toNode;
 			}
 		}
-		if (pNode.edges == null) {
-			// create new leaf node
-			pNode.isLeaf = true;
-			pNode.entry = new LeafEntry(strArr, currTime);
-		}
+		// create new leaf node
+		pNode.isLeaf = true;
+		pNode.entry = new LeafEntry(strArr, currTime);
 		this.numPaths++;
 	}
 
-	public void insert(ArrayList<Integer> cMembers, String[][] strs,
-			LocalTime currTime) {
+	public void insert(String[][] strs, LocalTime currTime) {
 		for (String[] str : strs) {
 			insert(str, currTime);
 		}
@@ -104,9 +102,11 @@ public class Trie {
 		// traverse all nodes that belong to the parent
 		String retStr = "";
 
-		if (parentNode.edges == null) {
-			return retStr + parentNode.entry.toString();
-		} else {
+		if (parentNode.entry != null) {
+			retStr += parentNode.entry.toString();
+
+		}
+		if (parentNode.edges != null) {
 			for (Edge edge : parentNode.edges) {
 				if (parentNode.equals(root)) {
 					retStr += "root ";
@@ -143,26 +143,6 @@ public class Trie {
 	 */
 	public String toString() {
 		return traverse(root);
-	}
-
-	public static void main(String[] args) throws Exception {
-		String[] s = { "y", "e", "a", "r" };
-		String[] s1 = { "y", "e", "s" };
-		LocalTime currt = LocalTime.MIDNIGHT;
-
-		ArrayList<Integer> m1 = new ArrayList<Integer>();
-		m1.add(10);
-		m1.add(20);
-		m1.add(30);
-		// test insert string
-		Trie trie = new Trie();
-		trie.insert(s, currt);
-		trie.insert(s1, currt);
-		System.out.println(trie.toString());
-
-		trie.remove(s, "a", currt);
-		System.out.println(trie.toString());
-		// System.out.println(trie.getLeafEntry("abc"));
 	}
 
 	/**
@@ -227,14 +207,31 @@ public class Trie {
 				// go down one level
 				// one more char
 				pNode = e.toNode;
-
 			}
 		}
 		pNode.entry.te = currTime;
 		LeafEntry res = pNode.entry;
 		pNode.entry = null;
 
+		// house keeping
+		// go reverse direction to remove nodes
+		iterRemove(pNode);
 		return res;
+	}
+
+	private void iterRemove(Node cNode) {
+		
+		while (!cNode.equals(root)) {
+			Edge pEdge = cNode.pEdge;
+			Node pNode = cNode.pEdge.fromNode;
+			if ((cNode.edges == null || cNode.edges.size() == 0)
+					&& (cNode.entry == null)) {
+				//remove cNode
+				pEdge.toNode=null;
+				pNode.edges.remove(pEdge);
+			}
+			cNode = pNode;
+		}
 	}
 
 }

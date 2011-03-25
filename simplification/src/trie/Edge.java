@@ -30,4 +30,8 @@ public class Edge {
 	public String toString() {
 		return "[" + fromNode.id + "--" + toNode.id + " " + label + "]";
 	}
+	
+	public void setToNode(Node node){
+		this.toNode = node;
+	}
 }

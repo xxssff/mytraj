@@ -38,4 +38,12 @@ public class Candidates {
 		}
 		this.minScore = min;
 	}
+	
+	/**
+	 * @return String rep
+	 */
+	public String toString(){
+		String resStr = "minScore Candidates: "+minScore+" "+candidates;
+		return resStr;
+	}
 }
