@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
+import org.joda.time.Seconds;
 
 /**
  * LeafEntry for trie
@@ -13,7 +14,7 @@ import org.joda.time.PeriodType;
  * 
  */
 public class LeafEntry {
-	public String[] subCluster;
+	public Object[] subCluster;
 	public LocalTime ts, te;
 	double duration;
 	double score;
@@ -26,7 +27,7 @@ public class LeafEntry {
 		this.duration = p.toStandardSeconds().getSeconds();
 	}
 
-	public LeafEntry(String[] members, LocalTime currTime) {
+	public LeafEntry(Object[] members, LocalTime currTime) {
 		this.ts = currTime;
 		this.subCluster = members;
 	}
@@ -49,8 +50,10 @@ public class LeafEntry {
 			return "[leafEntry: " + " " + ts.toString() + " "
 					+ Arrays.toString(subCluster) + "]";
 		} else {
-			return "[score Te Ts Mems: " + score + " " + ts.toString() + " "
-					+ te.toString() + Arrays.toString(subCluster) + "]";
+			return "[score dura Mems: " + score + " "
+					// + Seconds.secondsBetween(ts, te).getSeconds()
+					+ ts.toString() + " " + te.toString() + " "
+					+ Arrays.toString(subCluster) + "]";
 		}
 	}
 

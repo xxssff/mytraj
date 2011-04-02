@@ -143,7 +143,7 @@ public class DBScan {
 				//take the positive one
 				sec = (int) Math.max(Math.ceil(roots.get(0)),
 						Math.ceil(roots.get(1)));
-				if(sec<0){
+				if(sec<=0){
 					return null;
 				}
 			}
