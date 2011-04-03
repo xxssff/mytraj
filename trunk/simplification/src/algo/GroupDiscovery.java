@@ -38,14 +38,13 @@ import entity.TimeObject;
 
 /**
  * 
- * TODO: snapping data in the database <br> 
+ * TODO: snapping data in the database <br>
  * TODO: remove trajectories shorter than 12s<br>
- * TODO: data from time when there are more than 10 moving objects <br>
- * 		and end when there are less than 10 moving objects <br>
- * TODO: delete some data between
- * TODO: synchronize new comers
- * 2001-03-31: change to NumTrie <br>
+ * 
+ * TODO: delete some data from database <br>
+ * 2001-03-31: change from string Trie to NumTrie <br>
  * 2011-04-02: examine trie when program terminates<br>
+ * 2011-04-03: fill up OBJ and allObjs when update happens<br>
  * 
  * @author xiaohui
  * 
@@ -65,28 +64,28 @@ public class GroupDiscovery {
 	/**
 	 * real params
 	 */
-	 static LocalTime nextReadTime = new LocalTime(Global.infati_MINTIME);
-	 static LocalTime currTime = new LocalTime(Global.infati_MINTIME);
-	 static LocalTime systemMaxTime = new LocalTime(Global.infati_MAXTIME);
-	 static LocalTime systemMinTime = new LocalTime(Global.infati_MINTIME);
-	 static String systemTable = Global.infatiTable;
-	 static int eps = 60;
-	 static int minPts = 10;
-	 static int tau = 10; // seconds
-	 static int gap = 180; // how long is a chunk (min)
+	static LocalTime nextReadTime = new LocalTime(Global.infati_MINTIME);
+	static LocalTime currTime = new LocalTime(Global.infati_MINTIME);
+	static LocalTime systemMaxTime = new LocalTime(Global.infati_MAXTIME);
+	static LocalTime systemMinTime = new LocalTime(Global.infati_MINTIME);
+	static String systemTable = Global.infatiTable;
+	static int eps = 60;
+	static int minPts = 10;
+	static int tau = 10; // seconds
+	static int gap = 180; // how long is a chunk (min)
 
 	/**
 	 * Test parameters
 	 */
-//	static LocalTime nextReadTime = new LocalTime(Global.Test_MINTIME);
-//	static LocalTime currTime = new LocalTime(Global.Test_MINTIME);
-//	static LocalTime systemMinTime = new LocalTime(Global.Test_MINTIME);
-//	static LocalTime systemMaxTime = new LocalTime(Global.Test_MAXTIME);
-//	static String systemTable = Global.testTable;
-//	static int eps = 50;
-//	static int minPts = 3;
-//	static int tau = 3; // seconds
-//	static int gap = 60; // how long is a chunk (min)
+	// static LocalTime nextReadTime = new LocalTime(Global.Test_MINTIME);
+	// static LocalTime currTime = new LocalTime(Global.Test_MINTIME);
+	// static LocalTime systemMinTime = new LocalTime(Global.Test_MINTIME);
+	// static LocalTime systemMaxTime = new LocalTime(Global.Test_MAXTIME);
+	// static String systemTable = Global.testTable;
+	// static int eps = 50;
+	// static int minPts = 3;
+	// static int tau = 3; // seconds
+	// static int gap = 60; // how long is a chunk (min)
 
 	static Data dataSource = new Data();
 	// hm hold data points of current chunk
@@ -368,7 +367,7 @@ public class GroupDiscovery {
 				// retrieve neighbors for the core object
 				ArrayList<MovingObject> neighbors = DBScan.rangeQuery(mo, OBJ,
 						eps);
-//				System.out.println("neighbor size: "+neighbors.size());
+				// System.out.println("neighbor size: "+neighbors.size());
 				neighbors.remove(mo);
 				TimeObject[] tos = new TimeObject[neighbors.size()];
 				int counter = 0;
@@ -434,38 +433,23 @@ public class GroupDiscovery {
 
 	/**
 	 * 
-	 * fill up containers <br>
-	 * 
 	 * 
 	 * @param hm
 	 * @return list of new objects
 	 */
-	private static ArrayList<Integer> fillup(
+	private static ArrayList<Integer> updateEventQNewData(
 			HashMap<Integer, ArrayList<DataPoint>> hm) {
 		ArrayList<Integer> res = new ArrayList<Integer>();
-
 		// i is routeid
 		for (Integer i : hm.keySet()) {
+			if (allObjs.get(i) == null) {
+				// new comers
+				res.add(i);
+			}
 			ArrayList<DataPoint> dps = hm.get(i);
 			if (dps != null) {
-				DataPoint dp = dps.get(0); // first data point
-
-				// new objects come in
-				if (allObjs.get(dp.routeId) == null) {
-					// // oid = routeid
-					MovingObject mo = new MovingObject(dp.routeId, dp);
-					allObjs.put(mo.oid, mo);
-					OBJ.add(mo);
-					res.add(mo.oid);
-				}
-
-				Iterator<DataPoint> ite = dps.iterator();
-				if (currTime.equals(systemMinTime)) {
-					ite.next(); // ignore the first dp
-				}
-				// init eventQ
-				while (ite.hasNext()) {
-					dp = ite.next();
+				// insert into eventQ
+				for (DataPoint dp : dps) {
 					MyEvent e = new MyEvent(dp.time, dp.routeId, -1,
 							EventType.UPDATE);
 					eventQ.add(e);
@@ -519,17 +503,11 @@ public class GroupDiscovery {
 						currTimeStr, nextTimeStr, 0);
 
 				// start of the tracing
-				fillup(hm);
-				// System.out.println("hm size: " + hm.size());
-				// for (Integer i : hm.keySet()) {
-				// ArrayList<DataPoint> pt = hm.get(i);
-				// System.out.println(pt);
-				// }
+				// no need to do cluster after filling up
+				// because subsequent update event takes care of
+				// sync and cluster.
+				updateEventQNewData(hm);
 
-				// 1. doDBScan
-				// 2. fill up CS
-				ClusterObjects();
-				// System.out.println("CS size:" + CS.size());
 				nextReadTime = nextReadTime.plusMinutes(gap);
 
 				System.out.println();
@@ -552,12 +530,14 @@ public class GroupDiscovery {
 						currTimeStr, nextTimeStr, 0);
 
 				// insert new coming objects and
-				// location updates insert into eventQ
-				ArrayList<Integer> newComers = fillup(hm);
+				// no need to do cluster after filling up
+				// because subsequent update event takes care of
+				// sync and cluster.
+				ArrayList<Integer> newComers = updateEventQNewData(hm);
 				System.out.println("newComer size: " + newComers.size());
-
-				// cluster new coming obj
-				Insert(newComers);
+				//
+				// // cluster new coming obj
+				// Insert(newComers);
 
 				handleDisappear();
 
@@ -576,8 +556,9 @@ public class GroupDiscovery {
 				currTime = eventQ.peek().time;
 				System.out.println("curr Time: " + currTime);
 
-				// process other events
-				// start by locating moving objects
+				/**
+				 * sync moving objects
+				 */
 				for (MovingObject tempMo : OBJ) {
 					// get expected position
 					// System.out.println(tempMo.oid+" prev:"+tempMo.getX()+","+
@@ -586,6 +567,9 @@ public class GroupDiscovery {
 					tempMo.setDataPoint(dp);
 				}
 
+				/**
+				 * U has unclassified objects
+				 */
 				ArrayList<Integer> U = new ArrayList<Integer>();
 				// insert noise and unclassified data into U
 				for (MovingObject tempMo : OBJ) {
@@ -594,37 +578,42 @@ public class GroupDiscovery {
 					}
 				}
 
-				// process location updates
+				// process events
 				MyEvent evt = eventQ.poll();
 				System.out.println(evt.toString());
 
-				MovingObject mo = allObjs.get(evt.OID);
-
 				if (evt.type == EventType.UPDATE) {
-					// process update events
-					// ArrayList<DataPoint> dps = hm.get(evt.OID);
-					// for (DataPoint dp : dps) {
-					// if (dp.time.equals(currTime)) {
-					// mo.dataPoint = dp;
-					// }
-					// }
-					// update the cluster of mo
+					MovingObject mo = null;
+					if (allObjs.get(evt.OID) == null) {
+						// new comers
+						mo = new MovingObject(evt.OID, hm.get(evt.OID).get(0));
+						allObjs.put(mo.oid, mo);
+						OBJ.add(mo);
+					} else {
+						mo = allObjs.get(evt.OID);
+					}
 					if (mo.cid > 0) {
+						// mo belongs to a cluster
+						// update the cluster of mo
 						Cluster cluster = CS.get(mo.cid);
 						Breaker b = getExpireTime(cluster);
 						// update eventQ
 						cluster.expiryTime = b.time;
 						updateEventQ(cluster, b);
+					} else {
+						//mo is unclassified
+						U.add(evt.OID);
 					}
+					
 					Insert(U);
 				} else {
 					// double duration = currTime - cluster.startTime;
 					// cluster.updateScore(alpha, beta, gamma, duration);
 
 					// check if cluster is a true candidate;
-
 					// order of insert/deletion and updateTrie is important
 					Cluster cluster = CS.get(evt.CID);
+					MovingObject mo = allObjs.get(evt.OID);
 					if (cluster == null) {
 						continue;
 					}
@@ -980,14 +969,8 @@ public class GroupDiscovery {
 	}
 
 	/**
-	 * insert with real data points
+	 * Insert unclassified objects as in the paper
 	 * 
-	 * @param u2
-	 * @param oBJ2
-	 * @param eps2
-	 * @param minPts2
-	 * @param tau2
-	 * @param r2
 	 * @throws Exception
 	 */
 	public static void Insert(ArrayList<Integer> U) throws Exception {
