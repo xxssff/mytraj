@@ -1,9 +1,11 @@
 package algo;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -52,6 +54,7 @@ import entity.TimeObject;
  * 2011-04-04: add handleUpdateInCluster method <br>
  * 2011-04-04: remove Breaker class<br>
  * 2011-04-04: change how results are added into result list<br>
+ * 2011-04-04: read from conf file
  * 
  * @author xiaohui
  * 
@@ -548,291 +551,269 @@ public class GroupDiscovery {
 	// at every second if some events occur, process
 	// otherwise go to next iteration
 	public static void main(String[] args) throws Exception {
+		/**
+		 * Get parameters from conf file
+		 * 
+		 */
+		BufferedReader br = new BufferedReader(new FileReader(args[0]));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(args[1]));
 
-		// Cluster c1 = new Cluster(1);
-		// c1.add(1004);
-		// c1.add(1082);
-		// c1.add(1049);
-		// c1.add(1103);
-		//
-		// String[][] comm = getCombination(c1, 3);
-		// for (String[] com : comm)
-		// System.out.println(Arrays.toString(com));
-
-		// String[] s1 = { "a", "b", "c" };
-		// String[] s2 = { "a", "b", "c" };
-		// System.out.println(Arrays.equals(s1, s2));
-		doGroupDiscovery();
-
+		systemTable = br.readLine();
+		eps = Integer.parseInt(br.readLine());
+		minPts = Integer.parseInt(br.readLine());
+		tau = Integer.parseInt(br.readLine());
+		String ts = args[2];
+		String te = args[3];
+		doGroupDiscovery(ts, te, bw);
+		
+		//write candidates into result file
+		R.toFile(bw);
+		
+		br.close();
+		bw.close();
 	}
 
-	public static void doGroupDiscovery() throws Exception {
+	public static void doGroupDiscovery(String startTime, String endTime,
+			BufferedWriter bw) throws Exception {
 		// get a big chunk of data from database
+		/**
+		 * 1. fill up containers <br>
+		 * 2. update base time <br>
+		 */
+		// initial run
+		hm = dataSource.getDefinedTrajectories(systemTable, startTime, endTime,
+				0);
+		clean(hm);
+		// start of the tracing
+		// no need to do cluster after filling up
+		// because subsequent update event takes care of
+		// sync and cluster.
+		updateEventQNewData(hm);
 
-		boolean readChunk = false;
+		System.out.println();
+		System.out.println("After init:");
+		System.out.println("HM size: " + hm.size());
+		System.out.println("CS size: " + CS.size());
+		printCluster();
+		printEventQ();
+		System.out.println("=========");
 
-		while (nextReadTime.isBefore(systemMaxTime)) {
-			System.out.println("nextRead time: " + nextReadTime.toString());
+		// process these events
+		while (!eventQ.isEmpty()) {
 
-			/**
-			 * 1. Assume there are >=m objects at the beginning<br>
-			 * 2. fill up containers <br>
-			 * 3. update base time <br>
-			 */
-			if (nextReadTime.equals(systemMinTime)) {
-				// initial run
-				String nextTimeStr = Data.getNewTime(nextReadTime, gap, 0);
-				String currTimeStr = Data.converTimeToString(nextReadTime);
+			// process events
+			MyEvent evt = eventQ.poll();
+			System.out.println(evt.toString());
+			System.out.println("CS size: " + CS.size());
 
-				hm = dataSource.getDefinedTrajectories(systemTable,
-						currTimeStr, nextTimeStr, 0);
-
-				// start of the tracing
-				// no need to do cluster after filling up
-				// because subsequent update event takes care of
-				// sync and cluster.
-				updateEventQNewData(hm);
-
-				nextReadTime = nextReadTime.plusMinutes(gap);
-
-				System.out.println();
-				System.out.println("After init:");
-				System.out.println("HM size: " + hm.size());
-				System.out.println("CS size: " + CS.size());
-				printCluster();
-				printEventQ();
-				printTrie();
-				System.out.println("=========");
-
-			} else if (readChunk) {
-				currTime = nextReadTime;
-				// read from database
-				System.out.println("Reading next chunk...");
-				String nextTimeStr = Data.getNewTime(nextReadTime, gap, 0);
-				String currTimeStr = Data.converTimeToString(nextReadTime);
-				hm = dataSource.getDefinedTrajectories(systemTable,
-						currTimeStr, nextTimeStr, 0);
-
-				// insert new coming objects and
-				// no need to do cluster after filling up
-				// because subsequent update event takes care of
-				// sync and cluster.
-				ArrayList<Integer> newComers = updateEventQNewData(hm);
-				System.out.println("newComer size: " + newComers.size());
-				//
-				// // cluster new coming obj
-				// Insert(newComers);
-				System.out.println("CS size: " + CS.size());
-
-				nextReadTime = nextReadTime.plusMinutes(gap);
-				readChunk = false;
+			// move time to event time
+			if (evt.time.isAfter(currTime)) {
+				currTime = evt.time;
 			}
-			// process these events
-			while (!eventQ.isEmpty()
-					&& eventQ.peek().time.isBefore(nextReadTime)) {
+			System.out.println("curr Time: " + currTime);
 
-				// process events
-				MyEvent evt = eventQ.poll();
-				System.out.println(evt.toString());
-				System.out.println("CS size: " + CS.size());
-
-				// move time to event time
-				if (evt.time.isAfter(currTime)) {
-					currTime = evt.time;
+			if (evt.type == EventType.DISAPPEAR) {
+				System.out.println("Event: " + evt.OID + " disappearing...");
+				handleDisappear(allObjs.get(evt.OID));
+			} else {
+				/**
+				 * sync moving objects
+				 */
+				for (MovingObject tempMo : OBJ) {
+					// get expected position
+					DataPoint dp = getExpectedDataPoint(tempMo.oid, currTime);
+					tempMo.setDataPoint(dp);
 				}
-				System.out.println("curr Time: " + currTime);
 
-				if (evt.type == EventType.DISAPPEAR) {
-
-					System.out
-							.println("Event: " + evt.OID + " disappearing...");
-					handleDisappear(allObjs.get(evt.OID));
-				} else {
-					/**
-					 * sync moving objects
-					 */
-					for (MovingObject tempMo : OBJ) {
-						// get expected position
-						DataPoint dp = getExpectedDataPoint(tempMo.oid,
-								currTime);
-						tempMo.setDataPoint(dp);
+				/**
+				 * U has unclassified objects
+				 */
+				Set<Integer> U = new TreeSet<Integer>();
+				// insert noise and unclassified data into U
+				for (MovingObject tempMo : OBJ) {
+					if (tempMo.cid <= 0) {
+						U.add(tempMo.oid);
 					}
+				}
+				// System.out.println("OBJ: " + OBJ);
 
-					/**
-					 * U has unclassified objects
-					 */
-					Set<Integer> U = new TreeSet<Integer>();
-					// insert noise and unclassified data into U
-					for (MovingObject tempMo : OBJ) {
-						if (tempMo.cid <= 0) {
-							U.add(tempMo.oid);
-						}
-					}
-					// System.out.println("OBJ: " + OBJ);
-
-					if (evt.type == EventType.UPDATE) {
-						System.out.println("Handling update...");
-						MovingObject mo = null;
-						if (allObjs.get(evt.OID) == null) {
-							// new comers
-							mo = new MovingObject(evt.OID, hm.get(evt.OID).get(
-									0));
-							allObjs.put(mo.oid, mo);
-							OBJ.add(mo);
-						} else {
-							mo = allObjs.get(evt.OID);
-						}
-
-						if (mo.cid > 0) {
-							// mo belongs to a cluster
-							// update the cluster of mo
-							System.out.println("Handling update in cluster...");
-							Cluster cluster = CS.get(mo.cid);
-							handleUpdateInCluster(mo, cluster, U);
-						} else {
-							// mo is unclassified
-							U.add(evt.OID);
-						}
-
-						System.out.println("before insertion U: " + U);
-						Insert(U);
-
-						// printMutalDistance();
-
+				if (evt.type == EventType.UPDATE) {
+					System.out.println("Handling update...");
+					MovingObject mo = null;
+					if (allObjs.get(evt.OID) == null) {
+						// new comers
+						mo = new MovingObject(evt.OID, hm.get(evt.OID).get(0));
+						allObjs.put(mo.oid, mo);
+						OBJ.add(mo);
 					} else {
-						System.out.println("Event cluster:" + evt.CID);
-						Cluster cluster = CS.get(evt.CID);
-						MovingObject mo = allObjs.get(evt.OID);
+						mo = allObjs.get(evt.OID);
+					}
 
-						// Exit event
-						if (evt.type == EventType.EXIT) {
-							// check it is real exit
-							ArrayList<MovingObject> neighbors = DBScan
-									.rangeQuery(mo, OBJ, eps);
-							if (!hasCoreNeighbor(mo, neighbors)) {
-								
+					if (mo.cid > 0) {
+						// mo belongs to a cluster
+						// update the cluster of mo
+						System.out.println("Handling update in cluster...");
+						Cluster cluster = CS.get(mo.cid);
+						handleUpdateInCluster(mo, cluster, U);
+					} else {
+						// mo is unclassified
+						U.add(evt.OID);
+					}
 
-								trieUpdate(cluster, evt.OID, 0);
-								cluster.delete(mo.oid);
-								mo.cid = 0;
-								U.add(mo.oid);
-								Insert(U);
-							}
+					System.out.println("Inserting U: " + U);
+					Insert(U);
+
+				} else {
+					Cluster cluster = CS.get(evt.CID);
+					MovingObject mo = allObjs.get(evt.OID);
+
+					// Exit event
+					if (evt.type == EventType.EXIT) {
+						System.out.println("Handling exit...");
+						// check it is real exit
+						ArrayList<MovingObject> neighbors = DBScan.rangeQuery(
+								mo, OBJ, eps);
+						if (!hasCoreNeighbor(mo, neighbors)) {
+							trieUpdate(cluster, evt.OID, 0);
+							cluster.delete(mo.oid);
+							mo.cid = 0;
+							U.add(mo.oid);
+							Insert(U);
+						} else {
+							// recompute exit time
+							mo.exitTime = getExitTime(mo, cluster);
+							eventQ.add(new MyEvent(mo.exitTime, mo.oid, mo.cid,
+									EventType.EXIT));
 						}
-						// Join event
-						else if (evt.type == EventType.JOIN) {
-							cluster.add(mo.oid);
-							trieUpdate(cluster, evt.OID, 1);
+					}
+					// Join event
+					else if (evt.type == EventType.JOIN) {
+						System.out.println("Handling join...");
+						cluster.add(mo.oid);
+						trieUpdate(cluster, evt.OID, 1);
 
-							mo.cid = cluster.clusterId;
-							U.remove(mo);
-							LocalTime t = getExitTime(mo, cluster);
+						mo.cid = cluster.clusterId;
+						U.remove(mo);
+						LocalTime t = getExitTime(mo, cluster);
 
-							if (mo.cid == -1) {
-								throw new WrongClusterException(mo.toString());
+						if (mo.cid == -1) {
+							throw new WrongClusterException(mo.toString());
+						}
+						MyEvent event = new MyEvent(t, mo.oid,
+								cluster.clusterId, EventType.EXIT);
+						eventQ.add(event);
+					} else if (evt.type == EventType.EXPIRE) {
+						// check if the current cluster really needs to be
+						// rebuilt
+						System.out.println("Handling expire event...");
+						ArrayList<MovingObject> L = DBScan.rangeQuery(mo, OBJ,
+								eps);
+						if (L.size() >= minPts) {
+							// re-compute the expire time
+							setExpireTime(cluster);
+							updateEventQ(cluster);
+
+						} else if (hasCoreNeighbor(mo, L)) {
+							// still connected to the cluster
+							mo.label = false;
+							// set exit time
+							mo.exitTime = getExitTime(mo, cluster);
+						} else {
+							// get combinations for old cluster
+							// for each member, get its new member cluster
+							// intersect to detect those that are still
+							// traveling
+							// tgr
+
+							System.out.println("getting oldMem...");
+							Integer[] oldMems = cluster.members
+									.toArray(new Integer[0]);
+
+							MovingObject tempMo;
+							for (int i : cluster.members) {
+								// remove cluster id for each object
+								tempMo = allObjs.get(i);
+								tempMo.cid = 0;
+								tempMo.label = false;
+								U.add(tempMo.oid);
 							}
-							MyEvent event = new MyEvent(t, mo.oid,
-									cluster.clusterId, EventType.EXIT);
-							eventQ.add(event);
-						} else if (evt.type == EventType.EXPIRE) {
-							// check if the current cluster really needs to be
-							// rebuilt
-							System.out.println("handling expire event");
-							ArrayList<MovingObject> L = DBScan.rangeQuery(mo,
-									OBJ, eps);
-							if (L.size() >= minPts) {
-								// re-compute the expire time
-								setExpireTime(cluster);
-								updateEventQ(cluster);
+							// remove from CS
+							CS.remove(cluster.clusterId);
 
-							} else if (hasCoreNeighbor(mo, L)) {
-								// still connected to the cluster
-								mo.label = false;
-								// set exit time
-								mo.exitTime = getExitTime(mo, cluster);
-							} else {
-								// get combinations for old cluster
-								// for each member, get its new member cluster
-								// intersect to detect those that are still
-								// traveling
-								// tgr
+							Insert(U);
 
-								System.out.println("getting oldMem...");
-								Integer[] oldMems = cluster.members
-										.toArray(new Integer[0]);
+							int memSize = oldMems.length;
 
-								MovingObject tempMo;
-								for (int i : cluster.members) {
-									// remove cluster id for each object
-									tempMo = allObjs.get(i);
-									tempMo.cid = 0;
-									tempMo.label = false;
-									U.add(tempMo.oid);
-								}
-								// remove from CS
-								CS.remove(cluster.clusterId);
+							// after re-clustering, check new clusters
+							for (int numEle = minPts; numEle <= oldMems.length; numEle++) {
+								CombinationGenerator combGen = new CombinationGenerator(
+										memSize, numEle);
 
-								Insert(U);
+								Integer[] combination;
+								int[] indices;
 
-								int memSize = oldMems.length;
+								while (combGen.hasMore()) {
+									combination = new Integer[numEle];
+									indices = combGen.getNext();
+									for (int i = 0; i < indices.length; i++) {
+										combination[i] = oldMems[indices[i]];
+									}
 
-								// after re-clustering, check new clusters
-								for (int numEle = minPts; numEle <= oldMems.length; numEle++) {
-									CombinationGenerator combGen = new CombinationGenerator(
-											memSize, numEle);
-
-									Integer[] combination;
-									int[] indices;
-
-									while (combGen.hasMore()) {
-										combination = new Integer[numEle];
-										indices = combGen.getNext();
-										for (int i = 0; i < indices.length; i++) {
-											combination[i] = oldMems[indices[i]];
-										}
-
-										// see if combination is the same
-										// cluster
-										if (!inSameCluster(combination)) {
-											LeafEntry le = aTrie.remove(
-													combination, currTime);
-											checkCandidate(le);
-										}
+									// see if combination is the same
+									// cluster
+									if (!inSameCluster(combination)) {
+										LeafEntry le = aTrie.remove(
+												combination, currTime);
+										checkCandidate(le);
 									}
 								}
 							}
 						}
 					}
-
-					// handle candidate list
-
-					System.out.println();
-					System.out.println("After event:");
-					// printMutalDistance();
-					printCluster();
-					// printEventQ();
-					// printTrie();
-					printR();
-					System.out.println("===========");
-
 				}
-			}// end while eventQ!=empty or peekTime<nextReadTime
-			readChunk = true;
 
-			// end processing eventQ
+				// handle candidate list
 
-		}// end while
+				System.out.println();
+				System.out.println("After event:");
+				// printMutalDistance();
+				printCluster();
+				// printEventQ();
+				// printTrie();
+				printR();
+				System.out.println("===========");
+
+			}
+		}// end while eventQ!=empty or peekTime<nextReadTime
 
 		// close database connection
 		dataSource.closeConnection();
 
 		// examine entires in trie
-		trieFlush(aTrie.getRoot());
+		trieFlush(aTrie.getRoot(), endTime);
 		// print trie
-		printTrie();
+//		printTrie();
+//
+//		// print result list to console
+//		printR();
+	}
 
-		// print result list to console
-		printR();
+	/**
+	 * remove trajectories having less than 10 points
+	 * 
+	 * @param hm2
+	 */
+	private static void clean(HashMap<Integer, ArrayList<DataPoint>> ahm) {
+		ArrayList<Integer> toBeDel = new ArrayList<Integer>(hm.size());
+		for (Integer key : ahm.keySet()) {
+			ArrayList<DataPoint> points = ahm.get(key);
+			if (points.size() < 10) {
+				toBeDel.add(key);
+			}
+		}
+		for (Integer key : toBeDel) {
+			ahm.remove(key);
+		}
 	}
 
 	/**
@@ -967,18 +948,19 @@ public class GroupDiscovery {
 	 * when time ends, check all remaining leaf nodes
 	 * 
 	 * @param pNode
+	 * @param endTime
 	 */
-	private static void trieFlush(NumNode pNode) {
+	private static void trieFlush(NumNode pNode, String endTime) {
 		// traverse all nodes that belong to the parent
 		if (pNode.entry != null) {
 			// there is an entry
-			pNode.entry.te = systemMaxTime;
+			pNode.entry.te = new LocalTime(endTime);
 			checkCandidate(pNode.entry);
 		}
 		if (pNode.edges != null) {
 			for (NumEdge edge : pNode.edges) {
 				// traverse children
-				trieFlush(edge.toNode);
+				trieFlush(edge.toNode, endTime);
 			}
 		}
 	}
@@ -1019,6 +1001,7 @@ public class GroupDiscovery {
 		if (mo.cid > 0) {
 			Cluster cluster = CS.get(mo.cid);
 			assert cluster.members.contains(oid);
+
 			for (int r = minPts; r <= cluster.members.size(); r++) {
 				Integer[][] combs = getCombination(cluster, r);
 				for (Integer[] ints : combs) {
@@ -1030,6 +1013,7 @@ public class GroupDiscovery {
 					}
 				}
 			}
+			cluster.delete(mo.oid);
 		}
 	}
 
@@ -1488,7 +1472,7 @@ public class GroupDiscovery {
 	}
 
 	static void printR() {
-		System.out.println(R.toString());
+		System.out.println("Candidates: " + R.toString());
 	}
 
 	static void printTrie() {
