@@ -66,7 +66,6 @@ public class DBScan {
 								seeds.add(resultP);
 							}
 						}
-
 					}
 				} else {
 					// currP is border object; compute exit time
@@ -74,6 +73,34 @@ public class DBScan {
 					currP.exitTime = getExitTime(eps, currP, obj, currTime);
 				}
 				seeds.remove(currP);
+			}
+			return true;
+		}
+	}
+
+	public static boolean expandClusterMember(ArrayList<MovingObject> objects,
+			MovingObject obj, double eps, double minPts,
+			LocalTime currTime) {
+		ArrayList<MovingObject> seeds = DBScan.rangeQuery(obj, objects, eps);
+		if (seeds.size() < minPts) {
+			// border obj
+//			obj.exitTime = getExitTime(eps, obj, obj, currTime);
+			return false;
+		} else {
+			obj.label = true; // core object
+			seeds.remove(obj);
+		
+			while (!seeds.isEmpty()) {
+				MovingObject currP = seeds.get(0);
+				if(currP.cid<=0){
+					currP.cid=obj.cid;
+					expandClusterMember(objects, currP, eps, minPts, currTime);
+				}else{
+					//merge cluster
+					
+				}
+				
+				
 			}
 			return true;
 		}
@@ -87,39 +114,39 @@ public class DBScan {
 	 * @param currTime
 	 * @return exit time for currP
 	 */
-//	public static LocalTime getExitTime(double eps, MovingObject borderObj,
-//			MovingObject coreObj, LocalTime currTime) {
-//		// compute distances
-//		double objDist = borderObj.distance(coreObj);
-//		double d1 = eps - objDist;
-//		double d2 = Math.sqrt(eps * eps - objDist * objDist);
-//
-//		// compute velocities
-//		double deltaX = borderObj.getX() - coreObj.getX();
-//		double deltaY = borderObj.getY() - coreObj.getY();
-//		double sinTheta = deltaX / Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-//		double cosTheta = Math.sqrt(1 - sinTheta * sinTheta);
-//
-//		double deltaVX = borderObj.v.getVx() - coreObj.v.getVx();
-//		double deltaVY = borderObj.v.getVy() - coreObj.v.getVy();
-//		double along = deltaVX * sinTheta + deltaVY * cosTheta;
-//		double perpendicular = deltaVX * cosTheta + deltaVY * sinTheta;
-//
-//		int alongTime = 0;
-//		int perpenTime = 0;
-//		if (along < 0) {
-//			// increase along time
-//			alongTime = (int) Math.ceil((objDist + eps) / (-along));
-//		} else {
-//			alongTime = (int) Math.ceil((d1 / along));
-//		}
-//		if (perpendicular < 0) {
-//			perpenTime = (int) Math.ceil(d2 / (-perpendicular));
-//		} else {
-//			perpenTime = (int) Math.ceil(d2 / perpendicular);
-//		}
-//		return currTime.plusSeconds((int) Math.min(alongTime, perpenTime));
-//	}
+	// public static LocalTime getExitTime(double eps, MovingObject borderObj,
+	// MovingObject coreObj, LocalTime currTime) {
+	// // compute distances
+	// double objDist = borderObj.distance(coreObj);
+	// double d1 = eps - objDist;
+	// double d2 = Math.sqrt(eps * eps - objDist * objDist);
+	//
+	// // compute velocities
+	// double deltaX = borderObj.getX() - coreObj.getX();
+	// double deltaY = borderObj.getY() - coreObj.getY();
+	// double sinTheta = deltaX / Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+	// double cosTheta = Math.sqrt(1 - sinTheta * sinTheta);
+	//
+	// double deltaVX = borderObj.v.getVx() - coreObj.v.getVx();
+	// double deltaVY = borderObj.v.getVy() - coreObj.v.getVy();
+	// double along = deltaVX * sinTheta + deltaVY * cosTheta;
+	// double perpendicular = deltaVX * cosTheta + deltaVY * sinTheta;
+	//
+	// int alongTime = 0;
+	// int perpenTime = 0;
+	// if (along < 0) {
+	// // increase along time
+	// alongTime = (int) Math.ceil((objDist + eps) / (-along));
+	// } else {
+	// alongTime = (int) Math.ceil((d1 / along));
+	// }
+	// if (perpendicular < 0) {
+	// perpenTime = (int) Math.ceil(d2 / (-perpendicular));
+	// } else {
+	// perpenTime = (int) Math.ceil(d2 / perpendicular);
+	// }
+	// return currTime.plusSeconds((int) Math.min(alongTime, perpenTime));
+	// }
 
 	public static LocalTime getExitTime(double eps, MovingObject borderObj,
 			MovingObject coreObj, LocalTime currTime) {
@@ -130,20 +157,20 @@ public class DBScan {
 
 		int sec = 1;
 		if (roots == null) {
-			//no exit in near future
-//			System.err.println("DBScan.getExitTime(): roots null");
+			// no exit in near future
+			// System.err.println("DBScan.getExitTime(): roots null");
 			return null;
 		} else {
 			if (roots.size() == 1) {
-				if(roots.get(0)<0){
+				if (roots.get(0) < 0) {
 					return null;
 				}
 				sec = (int) Math.ceil(roots.get(0));
 			} else if (roots.size() == 2) {
-				//take the positive one
+				// take the positive one
 				sec = (int) Math.max(Math.ceil(roots.get(0)),
 						Math.ceil(roots.get(1)));
-				if(sec<=0){
+				if (sec <= 0) {
 					return null;
 				}
 			}

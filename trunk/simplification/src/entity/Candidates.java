@@ -7,43 +7,61 @@ import trie.LeafEntry;
 public class Candidates {
 	public ArrayList<LeafEntry> candidates;
 	public double minScore;
+
 	public Candidates() {
 		candidates = new ArrayList<LeafEntry>();
-		minScore = Double.MAX_VALUE;
+		minScore = 0;
 	}
-	
+
 	/**
 	 * Remove candidates having a specified score
+	 * 
 	 * @param score
 	 */
-	private void removeCandidates(double score) {
-		for(LeafEntry c : candidates){
-			if(c.getScore() == score){
+	public void removeCandidates(double score) {
+		for (LeafEntry c : candidates) {
+			if (c.getScore() == score) {
 				candidates.remove(c);
 			}
 		}
 	}
 
 	/**
-	 * remove candidates having minScore //
-	 * update minScore
+	 * remove candidates having minScore // update minScore
 	 */
 	public void updateMinScore() {
-		removeCandidates(minScore);
 		double min = Double.MAX_VALUE;
-		for(LeafEntry c: candidates){
-			if(c.getScore()<min){
+		for (LeafEntry c : candidates) {
+			if (c.getScore() < min) {
 				min = c.getScore();
 			}
 		}
 		this.minScore = min;
 	}
-	
+
+	/**
+	 * TODO: more reduction to be done along the way<br>
+	 * Otherwise too many candidates
+	 * 
+	 * @param le
+	 */
+	public void add(LeafEntry le) {
+		if (candidates.size() < 10) {
+			candidates.add(le);
+			minScore = le.getScore();
+		} else if (le.getScore() > minScore) {
+			candidates.add(le);
+			this.minScore = le.getScore();
+		}
+
+	}
+
 	/**
 	 * @return String rep
 	 */
-	public String toString(){
-		String resStr = "minScore Candidates: "+minScore+" "+candidates;
+	public String toString() {
+		String resStr = "minScore candidateSize: " + minScore + " "
+				+ candidates.size();
 		return resStr;
 	}
 }

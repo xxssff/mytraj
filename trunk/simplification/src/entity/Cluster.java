@@ -1,6 +1,7 @@
 package entity;
 
-import java.util.ArrayList;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.joda.time.LocalTime;
 
@@ -14,17 +15,17 @@ import org.joda.time.LocalTime;
  */
 public class Cluster {
 	public int clusterId;
-	public ArrayList<Integer> members;
+	public Set<Integer> members;
 	public double startTime;
 	public double duration;
 	private double score;
 	public LocalTime expiryTime;
-
+	public Integer expireOID;
 	// public double endTime;
 
 	public Cluster(int clusterId) {
 		this.clusterId = clusterId;
-		members = new ArrayList<Integer>();
+		members = new TreeSet<Integer>();
 		startTime = 0;
 		duration = 0;
 	}

@@ -1,5 +1,5 @@
 package entity;
 
 public enum EventType {
-	EXIT, JOIN, EXPIRE, UPDATE
+	EXIT, JOIN, EXPIRE, UPDATE,  DISAPPEAR
 }

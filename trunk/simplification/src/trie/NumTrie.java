@@ -26,9 +26,10 @@ public class NumTrie {
 		numPaths = 0;
 	}
 
-	public NumNode getRoot(){
+	public NumNode getRoot() {
 		return root;
 	}
+
 	// /**
 	// *
 	// * @param cMembers for leaf entry
@@ -91,11 +92,11 @@ public class NumTrie {
 		this.numPaths++;
 	}
 
-//	public void insert(String[][] strs, LocalTime currTime) {
-//		for (String[] str : strs) {
-//			insert(str, currTime);
-//		}
-//	}
+	// public void insert(String[][] strs, LocalTime currTime) {
+	// for (String[] str : strs) {
+	// insert(str, currTime);
+	// }
+	// }
 
 	/**
 	 * Performs full tree traversal using recursion.
@@ -148,27 +149,28 @@ public class NumTrie {
 
 	/**
 	 * 
-	 * @param strArr
-	 * @param s
+	 * @param intArr
+	 * @param moid
+	 *            : indicate where to cut
 	 * @param currTime
 	 * @return leaf node entry
 	 * @throws Exception
 	 */
-	public LeafEntry remove(Integer[] strArr, String s, LocalTime currTime)
+	public LeafEntry remove(Integer[] intArr, Integer moid, LocalTime currTime)
 			throws Exception {
 		NumNode pNode = root;
 		NumNode cNode = null;
 		NumEdge cNumEdge = null;
-		for (Integer ch : strArr) {
+		for (Integer ch : intArr) {
 			NumEdge e = pNode.getNumEdge(ch);
 
 			if (e == null) {
-				throw new StringNotExistException(strArr);
+				throw new StringNotExistException(intArr);
 			} else {
 				// go down one level
 				// one more char
 				pNode = e.toNode;
-				if (ch.equals(s)) {
+				if (ch == moid) {
 					cNode = pNode;
 					cNumEdge = e;
 				}
@@ -177,16 +179,21 @@ public class NumTrie {
 		pNode.entry.te = currTime;
 
 		// remove sub-tree
-		cNode.edges = null;
+		if (cNode != null) {
+			if (cNode.edges != null)
+				cNode.edges = null;
+		}
 		// remove edge
-		cNumEdge.fromNode.removeNumEdge(cNumEdge);
-
+		if (cNumEdge != null) {
+			cNumEdge.fromNode.removeNumEdge(cNumEdge);
+		}
+		numPaths--;
 		return pNode.entry;
 	}
 
 	/**
 	 * called by expire event <br>
-	 * remove leaf entry without removing path
+	 * 
 	 * 
 	 * @param intArr
 	 * @param currTime
@@ -214,19 +221,21 @@ public class NumTrie {
 		// house keeping
 		// go reverse direction to remove nodes
 		iterRemove(pNode);
+		
 		return res;
 	}
 
 	private void iterRemove(NumNode cNode) {
-		
+
 		while (!cNode.equals(root)) {
 			NumEdge pEdge = cNode.pEdge;
 			NumNode pNode = cNode.pEdge.fromNode;
 			if ((cNode.edges == null || cNode.edges.size() == 0)
 					&& (cNode.entry == null)) {
-				//remove cNode
-				pEdge.toNode=null;
+				// remove cNode
+				pEdge.toNode = null;
 				pNode.edges.remove(pEdge);
+				numPaths--;
 			}
 			cNode = pNode;
 		}

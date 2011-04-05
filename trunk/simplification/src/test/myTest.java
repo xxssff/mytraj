@@ -1,5 +1,7 @@
 package test;
 
+import java.util.Arrays;
+
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -11,24 +13,12 @@ public class myTest {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		GeometryFactory gf = new GeometryFactory();
-		Coordinate c1 = new Coordinate(0, 0);
-		Coordinate c2 = new Coordinate(1, 1);
-		Coordinate c3 = new Coordinate(2, 1);
-		Coordinate c4 = new Coordinate(2, 2);
-		
-		Coordinate c5 = new Coordinate(1, 1.5);
-		Coordinate c6 = new Coordinate(3, 1.5);
-		
-		LineString ls1 = gf
-				.createLineString(new Coordinate[] { c1, c2, c3, c4 });
-		
-		LineString ls2 = gf
-		.createLineString(new Coordinate[] { c5, c6 });
-
-		
-		Geometry g = ls1.intersection(ls2);
-		System.out.println(g.toString());
+		int[] a ={1, 2};
+		int[] b = new int[a.length+1];
+		System.arraycopy(a, 0 , b, 0, a.length);
+		System.out.println(Arrays.toString(b));
+		b[a.length]=3;
+		System.out.println(Arrays.toString(b));
 		
 	}
 
