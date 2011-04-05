@@ -25,6 +25,7 @@ public class MovingObject {
 		dataPoint = null;
 		label = false;
 		cid = 0;
+		exitTime = null;
 	}
 
 	public MovingObject(int oid, DataPoint dataPoint) {
@@ -32,6 +33,7 @@ public class MovingObject {
 		this.dataPoint = dataPoint;
 		this.label = false;
 		this.cid = 0;
+		exitTime = null;
 	}
 
 	/**

@@ -16,12 +16,13 @@ public class DataPoint {
 	public int time0; // the time of the point if starting time is 0
 	public double vx;
 	public double vy;
-
+	public boolean lastPoint;
+	
 	public DataPoint() {
 	}
 
 	public DataPoint(int routeId, Coordinate coordinate, double vx, double vy,
-			LocalTime time, LocalDateTime dateTime, int time0) {
+			LocalTime time, LocalDateTime dateTime, int time0, boolean lastPoint) {
 		this.routeId = routeId;
 		this.p = coordinate;
 		this.vx = vx;
@@ -29,6 +30,7 @@ public class DataPoint {
 		this.time = time;
 		this.dateTime = dateTime;
 		this.time0 = time0;
+		this.lastPoint = lastPoint;
 	}
 
 	public String toString() {

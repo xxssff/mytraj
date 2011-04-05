@@ -31,4 +31,7 @@ public class TimeObject implements Comparable {
 		return 0;
 	}
 
+	public String toString() {
+		return "TO Obj:" + time.toString() + " " + mo.toString();
+	}
 }

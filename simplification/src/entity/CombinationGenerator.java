@@ -103,18 +103,4 @@ public class CombinationGenerator {
 
 	}
 
-	public static void main(String[] args) {
-		int[] elements = { 1, 2, 3, 4, 5};
-		int[] indices;
-		CombinationGenerator x = new CombinationGenerator(elements.length, 3);
-		StringBuffer combination;
-		while (x.hasMore()) {
-			combination = new StringBuffer();
-			indices = x.getNext();
-			for (int i = 0; i < indices.length; i++) {
-				combination.append(elements[indices[i]]);
-			}
-			System.out.println(combination.toString());
-		}
-	}
 }

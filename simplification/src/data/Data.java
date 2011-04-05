@@ -89,6 +89,7 @@ public class Data {
 		ArrayList<DataPoint> points = null;
 
 		int routeId = -1;
+		int lastPoint = -1;
 
 		while (result.next()) {
 			int routeNext = result.getInt("routeid");
@@ -96,11 +97,43 @@ public class Data {
 				routeId = routeNext;
 				points = new ArrayList<DataPoint>();
 
-			} else if (routeId != routeNext) {
-				hm.put(routeId, points);
+				// find last point
+				String sql = "select d_id from " + tbName + " where routeid="
+						+ routeId + " order by time0 desc limit 1";
+				// execute select
+				PreparedStatement ps1 = db.getConnection()
+						.prepareStatement(sql);
+				ResultSet rs1 = ps1.executeQuery();
+				if (rs1.next()) {
+					lastPoint = rs1.getInt("d_id");
+				}
 
+				rs1.close();
+				ps1.close();
+
+			} else if (routeId != routeNext) {
+				/**
+				 * new routes
+				 */
+				hm.put(routeId, points);
 				routeId = routeNext;
 				points = new ArrayList<DataPoint>();
+
+				// find last point
+				// select d_id, max(time0) from tb_name where routeid=routeId;
+				// execute select
+				// lastPoint = result.getInt('d_id');
+				String sql = "select d_id from " + tbName + " where routeid="
+						+ routeId + " order by time0 desc limit 1";
+				// execute select
+				PreparedStatement ps1 = db.getConnection()
+						.prepareStatement(sql);
+				ResultSet rs1 = ps1.executeQuery();
+				rs1.next();
+				lastPoint = rs1.getInt("d_id");
+
+				rs1.close();
+				ps1.close();
 			}
 			Coordinate c = new Coordinate(Double.parseDouble(result
 					.getString("mpx")), Double.parseDouble(result
@@ -111,8 +144,15 @@ public class Data {
 			double vx = result.getFloat("xv");
 			double vy = result.getFloat("yv");
 
-			DataPoint dp = new DataPoint(routeId, c, vx, vy, aTime, dateTime,
-					result.getInt("time0"));
+			DataPoint dp = null;
+			if (lastPoint == result.getInt("d_id")) {
+				// last point is true
+				dp = new DataPoint(routeId, c, vx, vy, aTime, dateTime,
+						result.getInt("time0"), true);
+			} else {
+				dp = new DataPoint(routeId, c, vx, vy, aTime, dateTime,
+						result.getInt("time0"), false);
+			}
 			points.add(dp);
 		}
 		hm.put(routeId, points);
@@ -158,7 +198,7 @@ public class Data {
 			double vx = result.getFloat("xv");
 			double vy = result.getFloat("yv");
 			dp = new DataPoint(routeId, c, vx, vy, aTime, dateTime,
-					result.getInt("time0"));
+					result.getInt("time0"), false);
 
 		}
 
@@ -180,7 +220,7 @@ public class Data {
 			double vx1 = result1.getFloat("xv");
 			double vy1 = result1.getFloat("yv");
 			dp1 = new DataPoint(routeId, c1, vx1, vy1, aTime1, dateTime1,
-					result1.getInt("time0"));
+					result1.getInt("time0"), false);
 		}
 		result.close();
 		result1.close();
@@ -204,7 +244,7 @@ public class Data {
 		// LocalTime startStamp = new LocalTime(t1_p1.time);
 		// LocalTime currStamp = new LocalTime(p.time);
 		int secBetween = Seconds.secondsBetween(t1_p1.time, lt).getSeconds();
-		
+
 		// handle midnight special case
 		if (secBetween < 0) {
 			// String[] date = t1_p1.dateTime.split(" ");
@@ -243,7 +283,7 @@ public class Data {
 		double y = tau * (t1_p2.p.y - t1_p1.p.y) + t1_p1.p.y;
 
 		DataPoint newP = new DataPoint(t1_p1.routeId, new Coordinate(x, y),
-				t1_p1.vx, t1_p1.vy, lt, ldt, time);
+				t1_p1.vx, t1_p1.vy, lt, ldt, time, false);
 
 		return newP;
 	}
@@ -315,7 +355,7 @@ public class Data {
 		double y = tau * (t1_p2.p.y - t1_p1.p.y) + t1_p1.p.y;
 
 		DataPoint newP = new DataPoint(t1_p1.routeId, new Coordinate(x, y),
-				t1_p1.vx, t1_p1.vy, p.time, p.dateTime, time);
+				t1_p1.vx, t1_p1.vy, p.time, p.dateTime, time, false);
 
 		return newP;
 	}
