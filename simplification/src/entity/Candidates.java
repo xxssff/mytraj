@@ -1,5 +1,7 @@
 package entity;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 import trie.LeafEntry;
@@ -63,5 +65,12 @@ public class Candidates {
 		String resStr = "minScore candidateSize: " + minScore + " "
 				+ candidates.size();
 		return resStr;
+	}
+
+	public void toFile(BufferedWriter bw) throws Exception {
+		for(LeafEntry le : candidates){
+			bw.append(le.toString());
+			bw.newLine();
+		}
 	}
 }
