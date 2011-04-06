@@ -64,12 +64,11 @@ public class NumTrie {
 
 	/**
 	 * 
-	 * @param cMembers
-	 *            for leaf entry
+	 * @param avgDist
 	 * @param intArr
 	 * @param currTime
 	 */
-	public void insert(Integer[] intArr, LocalTime currTime) {
+	public void insert(double avgDist, Integer[] intArr, LocalTime currTime) {
 		NumNode pNode = root;
 		NumNode cNode = null;
 		for (Integer ch : intArr) {
@@ -88,7 +87,7 @@ public class NumTrie {
 		}
 		// create new leaf node
 		pNode.isLeaf = true;
-		pNode.entry = new LeafEntry(intArr, currTime);
+		pNode.entry = new LeafEntry(intArr, currTime, avgDist);
 		this.numPaths++;
 	}
 
