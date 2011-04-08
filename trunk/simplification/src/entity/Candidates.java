@@ -98,10 +98,12 @@ public class Candidates {
 	}
 
 	public void toFile(BufferedWriter bw) throws Exception {
-		Arrays.sort(candidates);
-		for (LeafEntry le : candidates) {
-			bw.append(le.toString());
-			bw.newLine();
+		if (candidates != null) {
+			Arrays.sort(candidates);
+			for (LeafEntry le : candidates) {
+				bw.append(le.toString());
+				bw.newLine();
+			}
 		}
 	}
 

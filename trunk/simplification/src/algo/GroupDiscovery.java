@@ -138,11 +138,9 @@ public class GroupDiscovery {
 				if (!tempMo.label) {
 					if (tempMo.exitTime == null) {
 						// tempMo does not exit in near future
-						tempMo.exitTime = currTime.plusMinutes(1);
+						tempMo.exitTime = currTime.plusHours(1);
 					}
-					if (tempMo.cid == -1) {
-						throw new WrongClusterException(tempMo.toString());
-					}
+
 					MyEvent event = new MyEvent(tempMo.exitTime, tempMo.oid,
 							tempC.clusterId, EventType.EXIT);
 					eventQ.add(event);
@@ -154,16 +152,10 @@ public class GroupDiscovery {
 		for (Integer i : newClusters) {
 			tempC = CS.get(i);
 			setExpireTime(tempC);
-			// tempC.expiryTime = b.time;
 
 			// insert into eventQ
 			eventQ.add(new MyEvent(tempC.expiryTime, tempC.expireOID,
 					tempC.clusterId, EventType.EXPIRE));
-
-			System.out.println("cluster " + tempC.clusterId + " #members: "
-					+ tempC.members.size());
-			System.out
-					.println("clusterID : " + tempC.clusterId + tempC.members);
 
 			// insert into trie
 			trieInsert(tempC);
@@ -178,7 +170,7 @@ public class GroupDiscovery {
 	private static void trieInsert(Cluster cluster) {
 		System.out.println("Inserting into Trie...");
 		System.out.println(cluster.clusterId + " members" + cluster.members);
-		// System.exit(0);
+		//
 
 		int memSize = cluster.members.size();
 		Integer[] elements = cluster.members.toArray(new Integer[memSize]);
@@ -299,7 +291,7 @@ public class GroupDiscovery {
 			if (time == null) {
 				// no exit in near future
 				// add one year to currTime
-				time = currTime.plusMinutes(1);
+				time = currTime.plusHours(1);
 			}
 			tos[counter++] = new TimeObject(time, neighbor);
 		}
@@ -345,7 +337,7 @@ public class GroupDiscovery {
 						if (time == null) {
 							// no exit in near future
 							// add one year to currTime
-							time = currTime.plusMinutes(1);
+							time = currTime.plusHours(1);
 						}
 						tos[counter++] = new TimeObject(time, neighbor);
 					}
@@ -450,7 +442,7 @@ public class GroupDiscovery {
 			}
 			ArrayList<DataPoint> dps = hm.get(i);
 			totalPoints += dps.size();
-			
+
 			if (dps != null) {
 				// insert into eventQ
 				for (DataPoint dp : dps) {
@@ -466,9 +458,9 @@ public class GroupDiscovery {
 				}
 			}
 		}
-		
-		stats.numDataPoints=totalPoints;
-		
+
+		stats.numDataPoints = totalPoints;
+
 		return res;
 	}
 
@@ -478,31 +470,34 @@ public class GroupDiscovery {
 		 * 
 		 */
 		BufferedReader br = new BufferedReader(new FileReader(args[0]));
-		BufferedWriter bw = new BufferedWriter(new FileWriter(args[1]));
 
-		//loop meta infor
+		// loop meta infor
 		String line;
-		while((line=br.readLine()).startsWith("#")){
-			//do nothing
+		while ((line = br.readLine()).startsWith("#")) {
+			// do nothing
 		}
-		systemTable = line;
+		String outFile = line;
+		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+		systemTable = br.readLine();
 		eps = Integer.parseInt(br.readLine());
 		minPts = Integer.parseInt(br.readLine());
 		tau = Integer.parseInt(br.readLine());
 		int k = Integer.parseInt(br.readLine());
-		
+		System.out.println("e:" + eps + "\t" + "m:" + minPts + "\t" + "tau:"
+				+ tau + "\tk:" + k);
+
 		StringTokenizer st = new StringTokenizer(br.readLine(), " ");
 		alpha = Double.parseDouble(st.nextToken());
 		beta = Double.parseDouble(st.nextToken());
 		gamma = Double.parseDouble(st.nextToken());
-		
+
 		st = new StringTokenizer(br.readLine(), " ");
 		String ts = st.nextToken();
 		String te = st.nextToken();
-		
+
 		R = new Candidates(k);
 		stats = new Statistics();
-		
+
 		long t_start = System.currentTimeMillis();
 		doGroupDiscovery(ts, te, bw);
 		long t_end = System.currentTimeMillis();
@@ -510,8 +505,8 @@ public class GroupDiscovery {
 		stats.startTime = ts;
 		stats.endTime = te;
 		stats.numGroups = R.getNumCans();
-		stats.elapsedTime = (t_end-t_start)/1000.0;
-		
+		stats.elapsedTime = (t_end - t_start) / 1000.0;
+
 		stats.toFile(bw);
 		R.toFile(bw);
 
@@ -539,9 +534,8 @@ public class GroupDiscovery {
 		System.out.println();
 		System.out.println("After init:");
 		System.out.println("HM size: " + hm.size());
-		System.out.println("CS size: " + CS.size());
-		printCluster();
-		printEventQ();
+		System.out.println("eventQ size: " + eventQ.size());
+		// printEventQ();
 		System.out.println("=========");
 
 		// process these events
@@ -549,8 +543,26 @@ public class GroupDiscovery {
 
 			// process events
 			MyEvent evt = eventQ.poll();
+			// if (evt.CID == 15 && evt.type == EventType.EXIT) {
+			// System.out.println(evt.toString());
+			// Cluster c = CS.get(15);
+			// for (Integer i : c.members) {
+			// System.out.println(allObjs.get(i));
+			// System.out.println(i + " exit time: "
+			// + getExitTime(allObjs.get(i), c));
+			// }
+			// System.out.println("c expiry time:" + c.expiryTime);
+			// }
+
 			System.out.println(evt.toString());
 			System.out.println("CS size: " + CS.size());
+//			if (CS.size() != 0 && CS.get(91) != null) {
+//				Cluster c = CS.get(91);
+//				for (Integer i : c.members) {
+//					System.out.println(allObjs.get(i));
+//				}
+//				System.exit(0);
+//			}
 
 			// move time to event time
 			if (evt.time.isAfter(currTime)) {
@@ -559,7 +571,6 @@ public class GroupDiscovery {
 			System.out.println("curr Time: " + currTime);
 
 			if (evt.type == EventType.DISAPPEAR) {
-				System.out.println("Event: " + evt.OID + " disappearing...");
 				handleDisappear(allObjs.get(evt.OID));
 			} else {
 				/**
@@ -605,57 +616,31 @@ public class GroupDiscovery {
 						// mo is unclassified
 						U.add(evt.OID);
 					}
-
-					System.out.println("Inserting U: " + U);
 					Insert(U);
 
 				} else {
-					Cluster cluster = CS.get(evt.CID);
-					MovingObject mo = allObjs.get(evt.OID);
-
 					// Exit event
 					if (evt.type == EventType.EXIT) {
 						System.out.println("Handling exit...");
 						// check it is real exit
-						ArrayList<MovingObject> neighbors = DBScan.rangeQuery(
-								mo, OBJ, eps);
-						if (!hasCoreNeighbor(mo, neighbors)) {
-							trieUpdate(cluster, evt.OID, 0);
-							cluster.delete(mo.oid);
-							mo.cid = 0;
-							U.add(mo.oid);
-							Insert(U);
-						} else {
-							// recompute exit time
-							mo.exitTime = getExitTime(mo, cluster);
-							eventQ.add(new MyEvent(mo.exitTime, mo.oid, mo.cid,
-									EventType.EXIT));
-						}
+						handleExitEvent(evt, U);
 					}
 					// Join event
 					else if (evt.type == EventType.JOIN) {
-						System.out.println("Handling join...");
-						cluster.add(mo.oid);
-						trieUpdate(cluster, evt.OID, 1);
-
-						mo.cid = cluster.clusterId;
-						U.remove(mo);
-						LocalTime t = getExitTime(mo, cluster);
-
-						if (mo.cid == -1) {
-							throw new WrongClusterException(mo.toString());
-						}
-						MyEvent event = new MyEvent(t, mo.oid,
-								cluster.clusterId, EventType.EXIT);
-						eventQ.add(event);
+						handleJoinEvent(evt, U);
 					}
+
 					// Expire event
 					else if (evt.type == EventType.EXPIRE) {
 						// check if the current cluster really needs to be
 						// rebuilt
 						System.out.println("Handling expire event...");
+						MovingObject mo = allObjs.get(evt.OID);
+						Cluster cluster = CS.get(evt.CID);
+
 						ArrayList<MovingObject> L = DBScan.rangeQuery(mo, OBJ,
 								eps);
+
 						if (L.size() >= minPts) {
 							// re-compute the expire time
 							setExpireTime(cluster);
@@ -666,6 +651,9 @@ public class GroupDiscovery {
 							mo.label = false;
 							// set exit time
 							mo.exitTime = getExitTime(mo, cluster);
+							if (mo.exitTime == null) {
+								mo.exitTime = currTime.plusHours(1);
+							}
 							eventQ.add(new MyEvent(mo.exitTime, mo.oid, mo.cid,
 									EventType.EXIT));
 						} else {
@@ -699,10 +687,11 @@ public class GroupDiscovery {
 									tempMo.cid = 0;
 									tempMo.label = false;
 									U.add(tempMo.oid);
+									removeFromEventQ(mo.oid, cluster.clusterId,
+											EventType.EXIT);
 								}
-								// remove from CS
+								// remove from CS and eventQ
 								CS.remove(cluster.clusterId);
-
 								Insert(U);
 
 								int memSize = oldMems.length;
@@ -738,10 +727,14 @@ public class GroupDiscovery {
 
 				// handle candidate list
 
-				System.out.println();
 				System.out.println("After event:");
 				// printMutalDistance();
 				printCluster();
+
+				// if(evt.OID==87812 && evt.type==EventType.EXPIRE){
+				// System.exit(0);
+				// }
+
 				// printEventQ();
 				// printTrie();
 				printR();
@@ -760,6 +753,61 @@ public class GroupDiscovery {
 		//
 		// // print result list to console
 		// printR();
+	}
+
+	private static void handleJoinEvent(MyEvent evt, Set<Integer> U)
+			throws Exception {
+		MovingObject mo = allObjs.get(evt.OID);
+		Cluster cluster = CS.get(evt.CID);
+		System.out.println("Handling join...");
+		cluster.add(mo.oid);
+		trieUpdate(cluster, evt.OID, 1);
+
+		mo.cid = cluster.clusterId;
+		U.remove(mo);
+		LocalTime t = getExitTime(mo, cluster);
+
+		if (mo.cid == -1) {
+			throw new WrongClusterException(mo.toString());
+		}
+		MyEvent event = new MyEvent(t, mo.oid, cluster.clusterId,
+				EventType.EXIT);
+		eventQ.add(event);
+	}
+
+	/**
+	 * Method to handle Exit Event
+	 * 
+	 * @throws Exception
+	 */
+	private static void handleExitEvent(MyEvent evt, Set<Integer> U)
+			throws Exception {
+		MovingObject mo = allObjs.get(evt.OID);
+		Cluster cluster = CS.get(evt.CID);
+		if(mo==null || cluster==null){
+			return;
+		}
+		ArrayList<MovingObject> neighbors = DBScan.rangeQuery(mo, OBJ, eps);
+		if (!hasCoreNeighbor(mo, neighbors)) {
+			trieUpdate(cluster, evt.OID, 0);
+			cluster.delete(mo.oid);
+			mo.cid = 0;
+			U.add(mo.oid);
+			// if cluster itself expires
+			if (cluster.members.size() < minPts) {
+				System.err.println("cluster breaks due to exit");
+				cluster.expiryTime = currTime;
+				cluster.expireOID = mo.oid;
+				updateEventQ(cluster);
+			} else {
+				Insert(U);
+			}
+		} else {
+			// mo not really exit
+			// recompute exit time
+			mo.exitTime = getExitTime(mo, cluster);
+			eventQ.add(new MyEvent(mo.exitTime, mo.oid, mo.cid, EventType.EXIT));
+		}
 	}
 
 	/**
@@ -827,6 +875,7 @@ public class GroupDiscovery {
 	 */
 	private static void handleUpdateInCluster(MovingObject mo, Cluster cluster,
 			Set<Integer> u) throws Exception {
+		System.out.println(mo);
 		if (!mo.label) {
 			// mo was a border obj
 			ArrayList<MovingObject> neighbors = DBScan.rangeQuery(mo, OBJ, eps);
@@ -841,26 +890,26 @@ public class GroupDiscovery {
 				boolean connected = false;
 				boolean exitTimeChanged = false;
 				for (MovingObject nei : neighbors) {
-					if (nei.label) {
+					if (nei.label && nei.cid == mo.cid) {
 						// still a border obj
 						// re-compute mo's exit time
 						LocalTime t1 = DBScan.getExitTime(eps, mo, nei,
 								currTime);
 						if (t1 == null) {
-							t1 = currTime.plusMinutes(0);
+							t1 = currTime.plusHours(1);
 						}
 						if (mo.exitTime == null || mo.exitTime.isAfter(t1)) {
 							mo.exitTime = t1;
 							exitTimeChanged = true;
 						}
-
 						connected = true;
 					}
 				}
 				if (!connected) {
 					// handle mo exit as a border
 					// by updating eventQ
-					mo.exitTime = currTime.plusSeconds(1);
+					System.err.println("border obj exit");
+					mo.exitTime = currTime;
 					updateEventQ(mo);
 				} else if (exitTimeChanged) {
 					updateEventQ(mo);
@@ -880,11 +929,11 @@ public class GroupDiscovery {
 				// Note: assume obj is border obj
 				boolean connected = false;
 				for (MovingObject nei : neighbors) {
-					if (nei.label) {
+					if (nei.label && nei.cid == mo.cid) {
 						LocalTime t1 = DBScan.getExitTime(eps, mo, nei,
 								currTime);
 						if (t1 == null) {
-							t1 = currTime.plusMinutes(1);
+							t1 = currTime.plusHours(1);
 						}
 						if (mo.exitTime == null || mo.exitTime.isAfter(t1)) {
 							mo.exitTime = t1;
@@ -905,26 +954,9 @@ public class GroupDiscovery {
 					}
 				} else {
 					// mo becomes unclassified
-					mo.cid = 0;
-					u.add(mo.oid);
-					cluster.members.remove(new Integer(mo.oid));
 
-					// propergate to cluster
-					if (cluster.members.size() < minPts) {
-						MyEvent e = new MyEvent(currTime, mo.oid, mo.cid,
-								EventType.EXPIRE);
-						eventQ.add(e);
-					} else {
-						// treat like an obj exit
-						if (mo.cid == -1) {
-							throw new WrongClusterException(mo.toString());
-						}
-						MyEvent e = new MyEvent(currTime, mo.oid, mo.cid,
-								EventType.EXIT);
-						eventQ.add(e);
-
-					}
-
+					mo.exitTime = currTime;
+					updateEventQ(mo);
 				}
 			}
 		}
@@ -1000,6 +1032,14 @@ public class GroupDiscovery {
 				}
 			}
 			cluster.delete(mo.oid);
+			/**
+			 * cluster may expire because of disapp
+			 */
+			if (cluster.members.size() < minPts) {
+				cluster.expireOID = mo.oid;
+				cluster.expiryTime = currTime;
+				updateEventQ(cluster);
+			}
 		}
 	}
 
@@ -1012,11 +1052,34 @@ public class GroupDiscovery {
 		return false;
 	}
 
+	static void removeFromEventQ(int moid, int cid, EventType type) {
+		Iterator<MyEvent> eventIte = eventQ.iterator();
+		MyEvent indexEvt = null;
+		boolean found = false;
+		while (eventIte.hasNext()) {
+			MyEvent evt = eventIte.next();
+			if (evt.OID == moid && evt.CID == cid && type == EventType.EXIT) {
+				indexEvt = evt;
+				found = true;
+				
+//				if(evt.CID == 190 && evt.OID==91){
+//					printEventQ();
+//					System.exit(0);
+//				}
+				
+				break;
+			}
+		}
+		if (found) {
+			System.err.println("remove from eventQ, found and deleted");
+			eventQ.remove(indexEvt);
+		}
+		
+	}
+
 	/**
-	 * update the eventQ when a cluster's expire time changes
-	 * 
-	 * @param cluster
-	 * @param b
+	 * @param mo
+	 * @param type
 	 */
 	private static void removeFromEventQ(MovingObject mo, int type) {
 		if (type == 0) {
@@ -1024,14 +1087,18 @@ public class GroupDiscovery {
 			// iterate the eventQ for the cluster's expire event
 			Iterator<MyEvent> eventIte = eventQ.iterator();
 			MyEvent indexEvt = null;
+			boolean found = false;
 			while (eventIte.hasNext()) {
 				MyEvent evt = eventIte.next();
 				if (evt.type == EventType.EXIT && evt.OID == mo.oid) {
 					indexEvt = evt;
+					found = true;
 					break;
 				}
 			}
-			eventQ.remove(indexEvt);
+			if (found) {
+				eventQ.remove(indexEvt);
+			}
 		}
 	}
 
@@ -1045,14 +1112,18 @@ public class GroupDiscovery {
 		// iterate the eventQ for the cluster's expire event
 		Iterator<MyEvent> eventIte = eventQ.iterator();
 		MyEvent indexEvt = null;
+		boolean found = false; // to prevent that mo is not in the eventQ
 		while (eventIte.hasNext()) {
 			MyEvent evt = eventIte.next();
 			if (evt.type == EventType.EXIT && evt.OID == mo.oid) {
 				indexEvt = evt;
+				found = true;
 				break;
 			}
 		}
-		eventQ.remove(indexEvt);
+		if (found) {
+			eventQ.remove(indexEvt);
+		}
 		LocalTime exitTime = mo.exitTime;
 		if (exitTime.isBefore(currTime)) {
 			exitTime = currTime.plusSeconds(1);
@@ -1071,14 +1142,18 @@ public class GroupDiscovery {
 		// iterate the eventQ for the cluster's expire event
 		Iterator<MyEvent> eventIte = eventQ.iterator();
 		MyEvent indexEvt = null;
+		boolean found = false;
 		while (eventIte.hasNext()) {
 			MyEvent evt = eventIte.next();
 			if (evt.type == EventType.EXPIRE && evt.CID == cluster.clusterId) {
 				indexEvt = evt;
+				found = true;
 				break;
 			}
 		}
-		eventQ.remove(indexEvt);
+		if (found) {
+			eventQ.remove(indexEvt);
+		}
 
 		MyEvent newEvt = new MyEvent(cluster.expiryTime, cluster.expireOID,
 				cluster.clusterId, EventType.EXPIRE);
@@ -1185,6 +1260,11 @@ public class GroupDiscovery {
 	 */
 	private static void trieUpdate(Cluster cluster, Integer moid, int type)
 			throws Exception {
+		if(cluster==null){
+			return;
+		}
+//		System.out.println("In updating trie, cluster moid type"
+//				+ cluster.clusterId + " " + moid + " " + type);
 		Integer[] members = cluster.members.toArray(new Integer[0]);
 
 		// assuming object is not deleted yet
@@ -1266,7 +1346,7 @@ public class GroupDiscovery {
 			if (tempMo.label && tempMo.distance(mo) <= eps) {
 				LocalTime t = DBScan.getExitTime(eps, mo, tempMo, currTime);
 				if (t == null) {
-					t = currTime.plusMinutes(1);
+					t = currTime.plusHours(1);
 				}
 				if (minTime == null || minTime.isBefore(t)) {
 					minTime = t;
@@ -1282,6 +1362,7 @@ public class GroupDiscovery {
 	 * @throws Exception
 	 */
 	public static void Insert(Set<Integer> u) throws Exception {
+		System.out.println("Inserting u size..." + u.size() + " " + u);
 		Set<Integer> G = new HashSet<Integer>();
 		MovingObject mo;
 		for (Integer i : u) {
@@ -1316,7 +1397,7 @@ public class GroupDiscovery {
 			}
 		}
 
-		System.out.println("trying to cluster U: " + u);
+		System.out.println("trying to cluster U...");
 		if (u.size() >= minPts) {
 			ClusterObjects(u);
 		}
@@ -1356,6 +1437,9 @@ public class GroupDiscovery {
 					// tempMo is border obj
 					tempMo.exitTime = DBScan.getExitTime(eps, tempMo, coreObj,
 							currTime);
+					if (tempMo.exitTime == null) {
+						tempMo.exitTime = currTime.plusHours(1);
+					}
 					// update eventQ
 					updateEventQ(tempMo);
 				}
@@ -1444,11 +1528,11 @@ public class GroupDiscovery {
 	private static void merge(Cluster c, Cluster c1) {
 		for (Integer i : c1.members) {
 			c.add(i);
-			OBJ.get(i).cid = c.clusterId;
-			c1.delete(i);
+			allObjs.get(i).cid = c.clusterId;
 		}
 		// delete c1 from CS
 		CS.remove(c1.clusterId);
+		c1.members = null;
 	}
 
 	static void printMutalDistance() {
@@ -1467,7 +1551,7 @@ public class GroupDiscovery {
 		System.out.println("Printing CS...");
 		for (Integer i : CS.keySet()) {
 			Cluster c = CS.get(i);
-			System.out.println("clus size" + i + " " + c.members.size() + ":"
+			System.out.println("cid size " + i + " " + c.members.size() + ":"
 					+ " " + c.members);
 		}
 	}

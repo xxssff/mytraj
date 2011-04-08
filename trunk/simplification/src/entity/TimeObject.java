@@ -18,14 +18,17 @@ public class TimeObject implements Comparable {
 		this.mo = mo;
 	}
 
+	/**
+	 * order in descending order
+	 */
 	@Override
 	public int compareTo(Object arg0) {
-		if (arg0 instanceof MyEvent) {
-			MyEvent e = (MyEvent) arg0;
+		if (arg0 instanceof TimeObject) {
+			TimeObject e = (TimeObject) arg0;
 			if (this.time.isAfter(e.time)) {
-				return 1;
-			} else if (this.time.isBefore(e.time)) {
 				return -1;
+			} else if (this.time.isBefore(e.time)) {
+				return 1;
 			}
 		}
 		return 0;

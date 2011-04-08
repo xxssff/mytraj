@@ -79,28 +79,26 @@ public class DBScan {
 	}
 
 	public static boolean expandClusterMember(ArrayList<MovingObject> objects,
-			MovingObject obj, double eps, double minPts,
-			LocalTime currTime) {
+			MovingObject obj, double eps, double minPts, LocalTime currTime) {
 		ArrayList<MovingObject> seeds = DBScan.rangeQuery(obj, objects, eps);
 		if (seeds.size() < minPts) {
 			// border obj
-//			obj.exitTime = getExitTime(eps, obj, obj, currTime);
+			// obj.exitTime = getExitTime(eps, obj, obj, currTime);
 			return false;
 		} else {
 			obj.label = true; // core object
 			seeds.remove(obj);
-		
+
 			while (!seeds.isEmpty()) {
 				MovingObject currP = seeds.get(0);
-				if(currP.cid<=0){
-					currP.cid=obj.cid;
+				if (currP.cid <= 0) {
+					currP.cid = obj.cid;
 					expandClusterMember(objects, currP, eps, minPts, currTime);
-				}else{
-					//merge cluster
-					
+				} else {
+					// merge cluster
+
 				}
-				
-				
+
 			}
 			return true;
 		}
@@ -154,11 +152,12 @@ public class DBScan {
 		CoefficientsQuartic quad = new CoefficientsQuartic(borderObj.dataPoint,
 				coreObj.dataPoint, eps);
 		ArrayList<Double> roots = quad.solve();
-
+		
+		LocalTime resTime = null;
 		int sec = 1;
 		if (roots == null) {
 			// no exit in near future
-			// System.err.println("DBScan.getExitTime(): roots null");
+
 			return null;
 		} else {
 			if (roots.size() == 1) {
@@ -170,12 +169,13 @@ public class DBScan {
 				// take the positive one
 				sec = (int) Math.max(Math.ceil(roots.get(0)),
 						Math.ceil(roots.get(1)));
-				if (sec <= 0) {
+				if (sec >= 36000 || sec <= 0) {
 					return null;
 				}
 			}
 		}
-		return currTime.plusSeconds(sec);
+
+		return resTime;
 	}
 
 	/**
