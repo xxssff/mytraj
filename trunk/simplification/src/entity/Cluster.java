@@ -34,6 +34,10 @@ public class Cluster {
 		members.add(moid);
 	}
 
+	/**
+	 * remove a member
+	 * @param moid
+	 */
 	public void delete(Integer moid) {
 		members.remove(moid);
 	}

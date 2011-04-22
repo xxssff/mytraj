@@ -164,7 +164,8 @@ public class NumTrie {
 			NumEdge e = pNode.getNumEdge(ch);
 
 			if (e == null) {
-				throw new StringNotExistException(intArr);
+				// throw new StringNotExistException(intArr);
+				// System.err.println("removal failed "+ intArr);
 			} else {
 				// go down one level
 				// one more char
@@ -175,18 +176,19 @@ public class NumTrie {
 				}
 			}
 		}
-		pNode.entry.te = currTime;
-
-		// remove sub-tree
-		if (cNode != null) {
-			if (cNode.edges != null)
-				cNode.edges = null;
+		if (pNode != null && pNode.entry != null) {
+			pNode.entry.te = currTime;
+			// remove sub-tree
+			if (cNode != null) {
+				if (cNode.edges != null)
+					cNode.edges = null;
+			}
+			// remove edge
+			if (cNumEdge != null) {
+				cNumEdge.fromNode.removeNumEdge(cNumEdge);
+			}
+			numPaths--;
 		}
-		// remove edge
-		if (cNumEdge != null) {
-			cNumEdge.fromNode.removeNumEdge(cNumEdge);
-		}
-		numPaths--;
 		return pNode.entry;
 	}
 
@@ -220,7 +222,7 @@ public class NumTrie {
 		// house keeping
 		// go reverse direction to remove nodes
 		iterRemove(pNode);
-		
+
 		return res;
 	}
 
