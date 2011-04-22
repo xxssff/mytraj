@@ -99,8 +99,14 @@ public class Candidates {
 
 	public void toFile(BufferedWriter bw) throws Exception {
 		if (candidates != null) {
-			Arrays.sort(candidates);
+			List<LeafEntry> leList = new ArrayList<LeafEntry>(candidates.length);
 			for (LeafEntry le : candidates) {
+				if (le != null) {
+					leList.add(le);
+				}
+			}
+			Collections.sort(leList);
+			for (LeafEntry le : leList) {
 				bw.append(le.toString());
 				bw.newLine();
 			}
