@@ -20,7 +20,7 @@ public class Candidates {
 		// minIdx = -1;
 		numCans = 0;
 	}
-
+	
 	/**
 	 * 
 	 * @param le
