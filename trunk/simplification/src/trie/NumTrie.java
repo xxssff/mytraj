@@ -3,9 +3,9 @@ package trie;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
-import entity.Candidates;
 import entity.Cluster;
 import entity.MovingObject;
 import entity.MyEvent;
@@ -68,7 +68,7 @@ public class NumTrie {
 	 * @param intArr
 	 * @param currTime
 	 */
-	public void insert(double avgDist, Integer[] intArr, LocalTime currTime) {
+	public void insert(double avgDist, Integer[] intArr, LocalDateTime currTime) {
 		NumNode pNode = root;
 		NumNode cNode = null;
 		for (Integer ch : intArr) {
@@ -155,7 +155,7 @@ public class NumTrie {
 	 * @return leaf node entry
 	 * @throws Exception
 	 */
-	public LeafEntry remove(Integer[] intArr, Integer moid, LocalTime currTime)
+	public LeafEntry remove(Integer[] intArr, Integer moid, LocalDateTime currTime)
 			throws Exception {
 		NumNode pNode = root;
 		NumNode cNode = null;
@@ -200,7 +200,7 @@ public class NumTrie {
 	 * @param currTime
 	 * @throws Exception
 	 */
-	public LeafEntry remove(Integer[] intArr, LocalTime currTime)
+	public LeafEntry remove(Integer[] intArr, LocalDateTime currTime)
 			throws Exception {
 		NumNode pNode = root;
 		for (Integer ch : intArr) {
@@ -221,7 +221,7 @@ public class NumTrie {
 
 		// house keeping
 		// go reverse direction to remove nodes
-		iterRemove(pNode);
+		//iterRemove(pNode);
 
 		return res;
 	}

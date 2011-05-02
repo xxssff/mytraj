@@ -15,11 +15,11 @@ import org.joda.time.LocalTime;
 public class TestTrie {
 	public static void main(String[] args) {
 
-		char[] a1 = { 'a', 'b', 'c' };
-		char[] a2 = { 'd', 'e', 'f' };
+		Integer[] a1 = { 1, 2, 3 };
+		Integer[] a2 = { 1, 5, 6};
 		
 	
-		Trie<char[], String> trie = new PatriciaTrie<char[], String>(CharArrayKeyAnalyzer.INSTANCE);
+		Trie<Integer[], String> trie = new PatriciaTrie<Integer[], String>();
 		trie.put(a1, "a1");
 		trie.put(a2, "a2");
 		

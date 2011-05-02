@@ -127,4 +127,12 @@ public class ClusterEvolutionTable {
 		}
 	}
 
+	public int getTotalSize() {
+		int sum = 0;
+		for (Integer key : table.keySet()) {
+			sum += table.get(key).size();
+		}
+		return sum;
+	}
+
 }

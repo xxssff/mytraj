@@ -11,6 +11,39 @@ import entity.MovingObject;
 import entity.TimeObject;
 
 public class Deleted {
+	// public static LocalTime getExitTime(double eps, MovingObject borderObj,
+	// MovingObject coreObj, LocalTime currTime) {
+	// // compute distances
+	// double objDist = borderObj.distance(coreObj);
+	// double d1 = eps - objDist;
+	// double d2 = Math.sqrt(eps * eps - objDist * objDist);
+	//
+	// // compute velocities
+	// double deltaX = borderObj.getX() - coreObj.getX();
+	// double deltaY = borderObj.getY() - coreObj.getY();
+	// double sinTheta = deltaX / Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+	// double cosTheta = Math.sqrt(1 - sinTheta * sinTheta);
+	//
+	// double deltaVX = borderObj.v.getVx() - coreObj.v.getVx();
+	// double deltaVY = borderObj.v.getVy() - coreObj.v.getVy();
+	// double along = deltaVX * sinTheta + deltaVY * cosTheta;
+	// double perpendicular = deltaVX * cosTheta + deltaVY * sinTheta;
+	//
+	// int alongTime = 0;
+	// int perpenTime = 0;
+	// if (along < 0) {
+	// // increase along time
+	// alongTime = (int) Math.ceil((objDist + eps) / (-along));
+	// } else {
+	// alongTime = (int) Math.ceil((d1 / along));
+	// }
+	// if (perpendicular < 0) {
+	// perpenTime = (int) Math.ceil(d2 / (-perpendicular));
+	// } else {
+	// perpenTime = (int) Math.ceil(d2 / perpendicular);
+	// }
+	// return currTime.plusSeconds((int) Math.min(alongTime, perpenTime));
+	// }
 	/**
 	 * set expire time of a new cluster
 	 * 

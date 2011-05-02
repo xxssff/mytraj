@@ -12,6 +12,7 @@ public class Statistics {
 	public String endTime = "";
 	public double elapsedTime = 0; //second
 	public double loadDataTime=0;
+	public int numCandidates=0;
 
 	public void toFile(BufferedWriter bw) throws Exception {
 //		bw.write("start time: " + startTime);
@@ -25,6 +26,11 @@ public class Statistics {
 		bw.write("Num Mos: " + numMos);
 		bw.newLine();
 		bw.write("Num DataPoints: " + numDataPoints);
+		bw.newLine();
+		bw.write("Num Checked Candidates: " + numCandidates);
+		bw.newLine();
+		
+		bw.write("Loading Data Time: " + loadDataTime);
 		bw.newLine();
 		bw.write("Elapsed Time: " + elapsedTime);
 		bw.newLine();
