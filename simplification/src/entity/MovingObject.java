@@ -1,5 +1,6 @@
 package entity;
 
+import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -18,7 +19,7 @@ public class MovingObject {
 	public DataPoint dataPoint; // has location and time
 	public boolean label; // {true=CORE, false=BORDER}
 	public int cid; // clusterID; -1 is noise; 0 is unclassified
-	public LocalTime exitTime;
+	public LocalDateTime exitTime;
 
 	public MovingObject() {
 		oid = 0;

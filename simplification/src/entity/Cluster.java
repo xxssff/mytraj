@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
 /**
@@ -18,10 +19,7 @@ import org.joda.time.LocalTime;
 public class Cluster {
 	public int clusterId;
 	public Set<Integer> members;
-	public double startTime;
-	public double duration;
-	private double score;
-	public LocalTime expiryTime;
+	public LocalDateTime expiryTime;
 	public Integer expireOID;
 
 	// public double endTime;
@@ -29,8 +27,6 @@ public class Cluster {
 	public Cluster(int clusterId) {
 		this.clusterId = clusterId;
 		members = new TreeSet<Integer>();
-		startTime = 0;
-		duration = 0;
 	}
 
 	public void add(Integer moid) {
@@ -62,16 +58,20 @@ public class Cluster {
 		double sumDist = 0;
 		int n = members.size();
 		Integer[] moidArr = members.toArray(new Integer[0]);
-		
+
 		for (int i = 0; i < n; i++) {
 			MovingObject mo1 = allObjs.get(moidArr[i]);
 			for (int j = i + 1; j < n; j++) {
 				MovingObject mo2 = allObjs.get(moidArr[j]);
-				sumDist += mo1.distance(mo2);
+				if (mo1 != null && mo2 != null)
+					sumDist += mo1.distance(mo2);
 			}
 		}
 
 		return 2 * sumDist / (n * (n - 1));
 	}
 
+	public String toString() {
+		return this.clusterId + " " + members;
+	}
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.joda.time.Seconds;
@@ -19,20 +20,21 @@ import org.joda.time.Seconds;
  */
 public class LeafEntry implements Comparable {
 	public Integer[] subCluster; // integers
-	public LocalTime ts, te;
+	public LocalDateTime ts;
+	public LocalDateTime te;
 	double alpha, beta, gamma;
 	double duration;
 	double score;
 	double avgDistStart, avgDistEnd, compactness;
 	static DecimalFormat formatter = new DecimalFormat("#.###");
 
-	public LeafEntry(Integer[] members, LocalTime currTime, double avgDistStart) {
+	public LeafEntry(Integer[] members, LocalDateTime currTime, double avgDistStart) {
 		this.ts = currTime;
 		this.subCluster = members;
 		this.avgDistStart = avgDistStart;
 	}
 
-	public LeafEntry(Set<Integer> members, LocalTime currTime, double avgDist) {
+	public LeafEntry(Set<Integer> members, LocalDateTime currTime, double avgDist) {
 		subCluster = members.toArray(new Integer[0]);
 		this.ts = currTime;
 		this.avgDistStart = avgDist;
@@ -72,17 +74,21 @@ public class LeafEntry implements Comparable {
 	/**
 	 * set duration, avgDistEnd, score
 	 * 
-	 * @param te
+	 * @param currTime
 	 * @param avgDistEnd
 	 * @param alpha
 	 * @param beta
 	 * @param gamma
 	 */
-	public void endCluster(LocalTime te, double avgDistEnd, double alpha,
+	public void endCluster(LocalDateTime currTime, double avgDistEnd, double alpha,
 			double beta, double gamma) {
-		this.te = te;
+		this.te = currTime;
 		this.avgDistEnd = avgDistEnd;
-		this.duration = Seconds.secondsBetween(ts, te).getSeconds();
+		if (ts == null || currTime == null) {
+			this.duration = 100;
+		} else {
+			this.duration = Seconds.secondsBetween(ts, currTime).getSeconds();
+		}
 		this.compactness = 2 / (avgDistStart + avgDistEnd);
 		this.alpha = alpha;
 		this.beta = beta;
@@ -126,6 +132,10 @@ public class LeafEntry implements Comparable {
 	public double getScore() {
 		return score;
 	}
+	
+	public LocalDateTime getStartTime(){
+		return this.ts;
+	}
 
 	public String toString() {
 		if (te == null) {
@@ -150,7 +160,11 @@ public class LeafEntry implements Comparable {
 	 * update score when any param is changed.
 	 */
 	public void updateScore() {
-		this.duration = Seconds.secondsBetween(ts, te).getSeconds();
+		if (ts == null || te == null) {
+			this.duration = 100;
+		} else {
+			this.duration = Seconds.secondsBetween(ts, te).getSeconds();
+		}
 		this.score = alpha * size() + beta * duration + gamma * compactness;
 	}
 }

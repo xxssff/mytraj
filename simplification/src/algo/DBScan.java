@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import mathUtil.CoefficientsQuartic;
 
+import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
 import entity.Global;
@@ -17,12 +18,19 @@ import entity.MovingObject;
  */
 public class DBScan {
 
+	/**
+	 * 
+	 * @param objects
+	 * @param eps
+	 * @param minPts
+	 * @param currDateTime
+	 */
 	public static void doDBScan(ArrayList<MovingObject> objects, double eps,
-			double minPts, LocalTime currTime) {
+			double minPts, LocalDateTime currDateTime) {
 		for (MovingObject obj : objects) {
 			if (obj.cid == 0) {
 				expandCluster(objects, obj, Global.nextCid(), eps, minPts,
-						currTime);
+						currDateTime);
 
 			}
 		}
@@ -40,7 +48,7 @@ public class DBScan {
 	 */
 	public static boolean expandCluster(ArrayList<MovingObject> objects,
 			MovingObject obj, int cid, double eps, double minPts,
-			LocalTime currTime) {
+			LocalDateTime currTime) {
 		ArrayList<MovingObject> seeds = rangeQuery(obj, objects, eps);
 		if (seeds.size() < minPts) {
 			obj.cid = -1; // noise
@@ -78,6 +86,15 @@ public class DBScan {
 		}
 	}
 
+	/**
+	 * 
+	 * @param objects
+	 * @param obj
+	 * @param eps
+	 * @param minPts
+	 * @param currTime
+	 * @return true 
+	 */
 	public static boolean expandClusterMember(ArrayList<MovingObject> objects,
 			MovingObject obj, double eps, double minPts, LocalTime currTime) {
 		ArrayList<MovingObject> seeds = DBScan.rangeQuery(obj, objects, eps);
@@ -112,52 +129,17 @@ public class DBScan {
 	 * @param currTime
 	 * @return exit time for currP
 	 */
-	// public static LocalTime getExitTime(double eps, MovingObject borderObj,
-	// MovingObject coreObj, LocalTime currTime) {
-	// // compute distances
-	// double objDist = borderObj.distance(coreObj);
-	// double d1 = eps - objDist;
-	// double d2 = Math.sqrt(eps * eps - objDist * objDist);
-	//
-	// // compute velocities
-	// double deltaX = borderObj.getX() - coreObj.getX();
-	// double deltaY = borderObj.getY() - coreObj.getY();
-	// double sinTheta = deltaX / Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-	// double cosTheta = Math.sqrt(1 - sinTheta * sinTheta);
-	//
-	// double deltaVX = borderObj.v.getVx() - coreObj.v.getVx();
-	// double deltaVY = borderObj.v.getVy() - coreObj.v.getVy();
-	// double along = deltaVX * sinTheta + deltaVY * cosTheta;
-	// double perpendicular = deltaVX * cosTheta + deltaVY * sinTheta;
-	//
-	// int alongTime = 0;
-	// int perpenTime = 0;
-	// if (along < 0) {
-	// // increase along time
-	// alongTime = (int) Math.ceil((objDist + eps) / (-along));
-	// } else {
-	// alongTime = (int) Math.ceil((d1 / along));
-	// }
-	// if (perpendicular < 0) {
-	// perpenTime = (int) Math.ceil(d2 / (-perpendicular));
-	// } else {
-	// perpenTime = (int) Math.ceil(d2 / perpendicular);
-	// }
-	// return currTime.plusSeconds((int) Math.min(alongTime, perpenTime));
-	// }
-
-	public static LocalTime getExitTime(double eps, MovingObject borderObj,
-			MovingObject coreObj, LocalTime currTime) {
+	public static LocalDateTime getExitTime(double eps, MovingObject borderObj,
+			MovingObject coreObj, LocalDateTime currTime) {
 
 		CoefficientsQuartic quad = new CoefficientsQuartic(borderObj.dataPoint,
 				coreObj.dataPoint, eps);
 		ArrayList<Double> roots = quad.solve();
-		
-		LocalTime resTime = null;
+
+		LocalDateTime resTime = null;
 		int sec = 1;
 		if (roots == null) {
 			// no exit in near future
-
 			return null;
 		} else {
 			if (roots.size() == 1) {
@@ -209,7 +191,7 @@ public class DBScan {
 	 * @return list of CID's
 	 */
 	public static void doDBScan(ArrayList<Integer> U, int eps, int minPts,
-			HashMap<Integer, MovingObject> allObjs, LocalTime currTime) {
+			HashMap<Integer, MovingObject> allObjs, LocalDateTime currTime) {
 		ArrayList<MovingObject> objs = new ArrayList<MovingObject>();
 
 		for (Integer i : U) {

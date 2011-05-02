@@ -1,15 +1,16 @@
 package entity;
 
+import org.joda.time.LocalDateTime;
 import org.joda.time.LocalTime;
 
 public class MyEvent implements Comparable {
-	public LocalTime time;
+	public LocalDateTime time;
 	public int OID;
 	public int CID;
 	public EventType type;
 
-	public MyEvent(LocalTime time, int OID, int CID, EventType type) {
-		this.time = time;
+	public MyEvent(LocalDateTime exitTime, int OID, int CID, EventType type) {
+		this.time = exitTime;
 		this.OID = OID;
 		this.CID = CID;
 		this.type = type;
