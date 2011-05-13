@@ -14,8 +14,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
 
-import org.joda.time.LocalDate;
-import org.joda.time.LocalDateTime;
 import org.joda.time.LocalDateTime;
 import org.joda.time.Seconds;
 
@@ -29,6 +27,7 @@ import data.DataPoint;
 import entity.CandidatesPlus;
 import entity.Cluster;
 import entity.ClusterEvolutionTable;
+import entity.ConfReader;
 import entity.EventType;
 import entity.Global;
 import entity.MovingObject;
@@ -204,45 +203,43 @@ public class GroupDiscoveryPlus {
 		 */
 		System.out
 				.println("===============Group Discovery Plus==================");
-		BufferedReader br = new BufferedReader(new FileReader(args[0]));
+		ConfReader reader = new ConfReader();
+		HashMap<String, String> conf = reader.read(args[0]);
 
-		// loop meta infor
-		String line;
-		while ((line = br.readLine()).startsWith("#")) {
-			// do nothing
-		}
-		String outFile = line;
-		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(
+				conf.get("outFile")));
 		bw.write("Group Discovery Plus Output=====");
 		bw.newLine();
 
-		systemTable = br.readLine();
-		eps = Integer.parseInt(br.readLine());
-		minPts = Integer.parseInt(br.readLine());
-		tau = Integer.parseInt(br.readLine());
-		int k = Integer.parseInt(br.readLine());
+		eps = Integer.parseInt(conf.get("eps"));
+		minPts = Integer.parseInt(conf.get("minPts"));
+		tau = Integer.parseInt(conf.get("tau"));
+		int k = Integer.parseInt(conf.get("k"));
+		alpha = Double.parseDouble(conf.get("alpha"));
+		beta = Double.parseDouble(conf.get("beta"));
+		gamma = Double.parseDouble(conf.get("gamma"));
+		systemTable = conf.get("systemTable");
+
 		System.out.println("e:" + eps + "\t" + "m:" + minPts + "\t" + "tau:"
 				+ tau + "\tk:" + k);
-
-		StringTokenizer st = new StringTokenizer(br.readLine(), " ");
-		alpha = Double.parseDouble(st.nextToken());
-		beta = Double.parseDouble(st.nextToken());
-		gamma = Double.parseDouble(st.nextToken());
-
-		st = new StringTokenizer(br.readLine(), " ");
-		String ts = st.nextToken();
-		String te = st.nextToken();
 
 		cands = new CandidatesPlus();
 		stats = new Statistics();
 		cet = new ClusterEvolutionTable(minPts);
 
+		String ts = conf.get("ts");
+		String te = conf.get("te");
+		String startTime = ts.substring(0, ts.indexOf("T")) + " "
+				+ ts.substring(ts.indexOf("T") + 1);
+		String endTime = te.substring(0, te.indexOf("T")) + " "
+		+ te.substring(te.indexOf("T") + 1);
+		
 		long t_start = System.currentTimeMillis();
-		doGroupDiscovery(ts, te, bw);
+		doGroupDiscovery(startTime, endTime, bw);
 		long t_end = System.currentTimeMillis();
 		// write candidates into result file
-		stats.startTime = ts;
-		stats.endTime = te;
+		stats.startTime = conf.get("ts");
+		stats.endTime = conf.get("te");
 
 		stats.elapsedTime = (t_end - t_start) / 1000.0;
 		stats.numGroups = cands.size();
@@ -250,7 +247,6 @@ public class GroupDiscoveryPlus {
 		stats.toFile(bw);
 		cands.toFile(bw);
 
-		br.close();
 		bw.close();
 	}
 
@@ -345,9 +341,11 @@ public class GroupDiscoveryPlus {
 						mo = allObjs.get(evt.OID);
 					}
 
+					// if (mo.cid > 0 && CS.get(mo.cid)!=null) {
 					if (mo.cid > 0) {
 						// mo belongs to a cluster
 						// update the cluster of mo
+						System.out.println("mo.cid" + mo.cid);
 						Cluster cluster = CS.get(mo.cid);
 						int n1 = cluster.members.size();
 						double avgDist1 = cluster.getAvgDist(allObjs);
@@ -421,7 +419,7 @@ public class GroupDiscoveryPlus {
 				// handle candidate list
 				// System.out.println("After event:");
 				// printMutalDistance();
-				// printCluster();
+				printCluster();
 
 				// if(evt.OID==87812 && evt.type==EventType.EXPIRE){
 				// System.exit(0);
@@ -743,7 +741,7 @@ public class GroupDiscoveryPlus {
 
 			// if cluster itself expires
 			if (cluster.members.size() < minPts) {
-				System.err.println("cluster expires due to disappear");
+				System.out.println("cluster expires due to disappear");
 				cluster.expiryTime = currTime;
 				cluster.expireOID = mo.oid;
 				updateEventQ(cluster);
@@ -756,12 +754,7 @@ public class GroupDiscoveryPlus {
 		}
 		OBJ.remove(mo);
 		allObjs.remove(mo);
-		/**
-		 * if mo belongs to a cluster, then corresponding trie combination
-		 * should be removed.
-		 * 
-		 */
-
+		mo.cid = 0;
 	}
 
 	static void removeFromEventQ(int moid, int cid, EventType type) {
@@ -783,7 +776,6 @@ public class GroupDiscoveryPlus {
 			}
 		}
 		if (found) {
-			System.err.println("remove from eventQ, found and deleted");
 			eventQ.remove(indexEvt);
 		}
 
