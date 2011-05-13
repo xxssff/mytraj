@@ -32,6 +32,7 @@ import data.DataPoint;
 import entity.CandidatesPlus;
 import entity.Cluster;
 import entity.CombinationGenerator;
+import entity.ConfReader;
 import entity.EventType;
 import entity.Global;
 import entity.MovingObject;
@@ -367,44 +368,34 @@ public class GroupDiscovery {
 		 * 
 		 */
 		System.out.println("===============Group Discovery==================");
-		BufferedReader br = new BufferedReader(new FileReader(args[0]));
+		ConfReader reader = new ConfReader();
+		HashMap<String, String> conf = reader.read(args[0]);
 
-		// loop meta infor
-		String line;
-		while ((line = br.readLine()).startsWith("#")) {
-			// do nothing
-		}
-		String outFile = line;
-		BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(
+				conf.get("outFile")));
+		eps = Integer.parseInt(conf.get("eps"));
+		minPts = Integer.parseInt(conf.get("minPts"));
+		tau = Integer.parseInt(conf.get("tau"));
+		int k = Integer.parseInt(conf.get("k"));
+		alpha = Double.parseDouble(conf.get("alpha"));
+		beta = Double.parseDouble(conf.get("beta"));
+		gamma = Double.parseDouble(conf.get("gamma"));
+		systemTable = conf.get("systemTable");
+		
 		bw.write("Group Discovery Output=====");
 		bw.newLine();
-
-		systemTable = br.readLine();
-		eps = Integer.parseInt(br.readLine());
-		minPts = Integer.parseInt(br.readLine());
-		tau = Integer.parseInt(br.readLine());
-		int k = Integer.parseInt(br.readLine());
 		System.out.println("e:" + eps + "\t" + "m:" + minPts + "\t" + "tau:"
 				+ tau + "\tk:" + k);
-
-		StringTokenizer st = new StringTokenizer(br.readLine(), " ");
-		alpha = Double.parseDouble(st.nextToken());
-		beta = Double.parseDouble(st.nextToken());
-		gamma = Double.parseDouble(st.nextToken());
-
-		st = new StringTokenizer(br.readLine(), " ");
-		String ts = st.nextToken();
-		String te = st.nextToken();
 
 		R = new CandidatesPlus();
 		stats = new Statistics();
 
 		long t_start = System.currentTimeMillis();
-		doGroupDiscovery(ts, te, bw);
+		doGroupDiscovery(conf.get("ts"), conf.get("te"), bw);
 		long t_end = System.currentTimeMillis();
 		// write candidates into result file
-		stats.startTime = ts;
-		stats.endTime = te;
+		stats.startTime = conf.get("ts");
+		stats.endTime = conf.get("ts");
 
 		stats.elapsedTime = (t_end - t_start) / 1000.0;
 		stats.numGroups = R.size();
@@ -412,7 +403,6 @@ public class GroupDiscovery {
 		stats.toFile(bw);
 		R.toFile(bw);
 
-		br.close();
 		bw.close();
 	}
 
@@ -635,12 +625,12 @@ public class GroupDiscovery {
 
 				// printEventQ();
 				printCluster();
-//				if (currTime.isBefore(new LocalDateTime(
-//						"2001-03-27T22:56:10.000"))) {
-//					printTrie();
-//				} else {
-////					System.exit(0);
-//				}
+				// if (currTime.isBefore(new LocalDateTime(
+				// "2001-03-27T22:56:10.000"))) {
+				// printTrie();
+				// } else {
+				// // System.exit(0);
+				// }
 				// printR();
 
 				System.out.println("===========");
@@ -1204,6 +1194,7 @@ public class GroupDiscovery {
 	 */
 	private static void updateTrie(Cluster cluster, Integer moid, int type)
 			throws Exception {
+		System.out.println("updating trie...");
 		if (cluster == null) {
 			return;
 		}
@@ -1221,7 +1212,7 @@ public class GroupDiscovery {
 				while (combGen.hasMore()) {
 					combination = new Integer[numEle];
 					indices = combGen.getNext();
-					for (int i = 0; i <indices.length; i++) {
+					for (int i = 0; i < indices.length; i++) {
 						combination[i] = members[indices[i]];
 					}
 					if (Arrays.asList(combination).contains(moid)) {
