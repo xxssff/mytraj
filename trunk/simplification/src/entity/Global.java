@@ -22,6 +22,7 @@ public class Global {
 	public static String infatiDay = "2001-03-27";
 	public static String infatiTable = "real_table";
 	public static LocalDateTime infatiMaxDateTIME= new LocalDateTime("2001-03-27T23:59:59");
+	public static LocalDateTime TruckMaxDateTIME= new LocalDateTime("2001-04-03T23:58:37");
 	public static LocalDateTime elkMaxDateTIME= new LocalDateTime("1996-07-18T13:40:07");
 	public static LocalDateTime currMaxDateTIME= infatiMaxDateTIME;
 	

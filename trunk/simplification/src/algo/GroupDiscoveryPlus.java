@@ -57,7 +57,6 @@ public class GroupDiscoveryPlus {
 	/**
 	 * real params
 	 */
-	static LocalDateTime nextReadTime = new LocalDateTime(Global.infati_MINTIME);
 	static LocalDateTime currTime = new LocalDateTime(Global.infati_MINTIME);
 	static LocalDateTime systemMaxTime = new LocalDateTime(
 			Global.infati_MAXTIME);
@@ -178,7 +177,8 @@ public class GroupDiscoveryPlus {
 			if (dps != null) {
 				// insert into eventQ
 				for (DataPoint dp : dps) {
-					if (Math.abs(dp.vx) < 0.1 && Math.abs(dp.vy) < 0.1) {
+					if (Math.abs(dp.vx) == 0 && Math.abs(dp.vy) == 0
+							&& dp.time0 == dps.get(dps.size() - 1).time0) {
 						MyEvent e = new MyEvent(dp.dateTime, dp.routeId, -1,
 								EventType.DISAPPEAR);
 						eventQ.add(e);
@@ -232,8 +232,8 @@ public class GroupDiscoveryPlus {
 		String startTime = ts.substring(0, ts.indexOf("T")) + " "
 				+ ts.substring(ts.indexOf("T") + 1);
 		String endTime = te.substring(0, te.indexOf("T")) + " "
-		+ te.substring(te.indexOf("T") + 1);
-		
+				+ te.substring(te.indexOf("T") + 1);
+
 		long t_start = System.currentTimeMillis();
 		doGroupDiscovery(startTime, endTime, bw);
 		long t_end = System.currentTimeMillis();
@@ -252,7 +252,6 @@ public class GroupDiscoveryPlus {
 
 	public static void doGroupDiscovery(String startTime, String endTime,
 			BufferedWriter bw) throws Exception {
-		// get a big chunk of data from database
 		/**
 		 * 1. fill up containers <br>
 		 * 2. update base time <br>
@@ -288,6 +287,16 @@ public class GroupDiscoveryPlus {
 
 		// process these events
 		while (!eventQ.isEmpty()) {
+			// test memory usage
+			// System.gc();
+			// System.gc();
+			// System.gc();
+			long mem1 = Runtime.getRuntime().totalMemory()
+					- Runtime.getRuntime().freeMemory();
+			if (mem1 > stats.memUsage) {
+				stats.memUsage = mem1;
+			}
+
 			// process events
 			MyEvent evt = eventQ.poll();
 			// move time to event time
@@ -754,7 +763,6 @@ public class GroupDiscoveryPlus {
 		}
 		OBJ.remove(mo);
 		allObjs.remove(mo);
-		mo.cid = 0;
 	}
 
 	static void removeFromEventQ(int moid, int cid, EventType type) {

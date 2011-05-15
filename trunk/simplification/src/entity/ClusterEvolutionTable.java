@@ -1,10 +1,9 @@
 package entity;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -82,6 +81,84 @@ public class ClusterEvolutionTable {
 				break;
 			}
 		}
+	}
+
+//	/**
+//	 * implementation exactly as in the paper: RevHist
+//	 * 
+//	 * @param entries
+//	 * @param enArr
+//	 */
+//	private void revHist(LeafEntry[] enArr, List<LeafEntry> entries) {
+//		int i = entries.size() - 1;
+//		while (i > 0) {
+//			LeafEntry curr = entries.get(i);
+//			LeafEntry prev = entries.get(i - 1);
+//			Set<Integer> currMemSet = convertArr2Set(curr.subCluster);
+//			int size = currMemSet.size();
+//			Set<Integer> prevMemSet = convertArr2Set(prev.subCluster);
+//			currMemSet.retainAll(prevMemSet);
+//			if (currMemSet.size() == size) {
+//				// case 1: intersection is currSet
+//				curr.ts = prev.ts;
+//				curr.updateScore();
+//			} else if (currMemSet.equals(prevMemSet)) {
+//				prev.te = curr.te;
+//				prev.updateScore();
+//			} else {
+//				LeafEntry le_new = new LeafEntry(
+//						currMemSet.toArray(new Integer[0]), prev.ts,
+//						enArr[i].getDistStart());
+//				le_new.endCluster(curr.te, curr.getDistEnd(), curr.getAlpha(),
+//						curr.getBeta(), curr.getGamma());
+//				// insert at the right pos
+//				insertEntry(le_new, entries);
+//				int j = i - 2;
+//				while (j >= 0 && currMemSet.size() >= minPts) {
+//					LeafEntry pEntry = entries.get(j);
+//					Set<Integer> temp = convertArr2Set(pEntry.subCluster);
+//					int size1 = currMemSet.size();
+//					currMemSet.retainAll(temp);
+//					if (currMemSet.size() < minPts) {
+//						break;
+//					} else if (currMemSet.size() == size1) {
+//						le_new.ts = pEntry.ts;
+//						le_new.updateScore();
+//					} else {
+//						LeafEntry le_new1 = new LeafEntry(
+//								currMemSet.toArray(new Integer[0]), pEntry.ts,
+//								pEntry.getDistStart());
+//						le_new1.endCluster(curr.te, curr.getDistEnd(),
+//								curr.getAlpha(), curr.getBeta(),
+//								curr.getGamma());
+//						// insert at the right pos
+//						insertEntry(le_new, entries);
+//					}
+//					j--;
+//				}
+//			}
+//			i--;
+//		}
+//	}
+
+	/**
+	 * 
+	 * @param entry
+	 * @param entries
+	 *            insert at pos s.t. list is sorted on both ts and te
+	 */
+	private void insertEntry(LeafEntry le_new, List<LeafEntry> entries) {
+		int index = 0;
+		Iterator<LeafEntry> ite = entries.iterator();
+		while (ite.hasNext()) {
+			LeafEntry le = ite.next();
+			if (le_new.ts.isBefore(le.ts) || (le_new.ts.equals(le.ts))
+					&& le_new.te.isBefore(le.te)) {
+				break;
+			}
+			index++;
+		}
+		entries.add(index, le_new);
 	}
 
 	/**
