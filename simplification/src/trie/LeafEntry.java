@@ -120,6 +120,10 @@ public class LeafEntry implements Comparable {
 		return avgDistStart;
 	}
 
+	/**
+	 * 
+	 * @return avgDistEnd
+	 */
 	public double getDistEnd() {
 		return this.avgDistEnd;
 	}

@@ -343,7 +343,8 @@ public class GroupDiscovery {
 			if (dps != null) {
 				// insert into eventQ
 				for (DataPoint dp : dps) {
-					if (Math.abs(dp.vx) < 0.1 && Math.abs(dp.vy) < 0.1) {
+					if (Math.abs(dp.vx) == 0 && Math.abs(dp.vy) == 0
+							&& dp.time0 == dps.get(dps.size() - 1).time0) {
 						MyEvent e = new MyEvent(dp.dateTime, dp.routeId, -1,
 								EventType.DISAPPEAR);
 						eventQ.add(e);
@@ -381,7 +382,7 @@ public class GroupDiscovery {
 		beta = Double.parseDouble(conf.get("beta"));
 		gamma = Double.parseDouble(conf.get("gamma"));
 		systemTable = conf.get("systemTable");
-		
+
 		bw.write("Group Discovery Output=====");
 		bw.newLine();
 		System.out.println("e:" + eps + "\t" + "m:" + minPts + "\t" + "tau:"
@@ -443,6 +444,16 @@ public class GroupDiscovery {
 		// process these events
 		while (!eventQ.isEmpty()) {
 
+			// test memory usage
+			// System.gc();
+			// System.gc();
+			// System.gc();
+			long mem1 = Runtime.getRuntime().totalMemory()
+					- Runtime.getRuntime().freeMemory();
+			if (mem1 > stats.memUsage) {
+				stats.memUsage = mem1;
+			}
+
 			// process events
 			MyEvent evt = eventQ.poll();
 			System.out.println(evt);
@@ -465,7 +476,9 @@ public class GroupDiscovery {
 				currTime = evt.time;
 			}
 			System.out.println("curr Time: " + currTime);
-			if (currTime.equals(LocalTime.MIDNIGHT.minusSeconds(1))) {
+			if (currTime.equals(Global.infati_MAXTIME)
+					|| currTime.equals(Global.elkMaxDateTIME)
+					|| currTime.equals(Global.elkMaxDateTIME)) {
 				// stop the process
 				// examine entires in trie
 				trieFlush(aTrie.getRoot(), endTime);
@@ -966,12 +979,6 @@ public class GroupDiscovery {
 		}
 		OBJ.remove(mo);
 		allObjs.remove(mo);
-		/**
-		 * if mo belongs to a cluster, then corresponding trie combination
-		 * should be removed.
-		 * 
-		 */
-
 	}
 
 	private static boolean contains(Integer[] ints, Integer id) {

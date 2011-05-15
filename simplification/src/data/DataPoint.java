@@ -27,6 +27,7 @@ public class DataPoint {
 		this.time0 = time0;
 	}
 
+	
 	public DataPoint() {
 	}
 
