@@ -229,13 +229,9 @@ public class GroupDiscoveryPlus {
 
 		String ts = conf.get("ts");
 		String te = conf.get("te");
-		String startTime = ts.substring(0, ts.indexOf("T")) + " "
-				+ ts.substring(ts.indexOf("T") + 1);
-		String endTime = te.substring(0, te.indexOf("T")) + " "
-				+ te.substring(te.indexOf("T") + 1);
-
+		
 		long t_start = System.currentTimeMillis();
-		doGroupDiscovery(startTime, endTime, bw);
+		doGroupDiscovery(ts, te, bw);
 		long t_end = System.currentTimeMillis();
 		// write candidates into result file
 		stats.startTime = conf.get("ts");
@@ -244,11 +240,21 @@ public class GroupDiscoveryPlus {
 		stats.elapsedTime = (t_end - t_start) / 1000.0;
 		stats.numGroups = cands.size();
 
+		//write param to file
+		bw.write("m: "+minPts+"; e: "+eps+"; tau:" +tau+"; k:"+k);
+		bw.newLine();
+		bw.write("table: "+systemTable);
+		bw.newLine();
+		bw.write(ts+"; "+te);
+		bw.newLine();
+		
 		stats.toFile(bw);
 		cands.toFile(bw);
 
 		bw.close();
 	}
+
+	
 
 	public static void doGroupDiscovery(String startTime, String endTime,
 			BufferedWriter bw) throws Exception {

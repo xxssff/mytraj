@@ -313,14 +313,12 @@ public class GroupDiscovery {
 		stats.numCandidates++;
 		double avgDistEnd = getAvgDist((Integer[]) entry.subCluster);
 		entry.endCluster(currTime, avgDistEnd, alpha, beta, gamma);
-		// System.out.println(entry.toString());
 		if (entry.getDuration() >= tau) {
 			R.add(entry);
 		}
 	}
 
 	/**
-	 * 
 	 * 
 	 * @param hm
 	 * @return list of new objects
@@ -391,15 +389,29 @@ public class GroupDiscovery {
 		R = new CandidatesPlus();
 		stats = new Statistics();
 
+		String ts = conf.get("ts");
+		String te = conf.get("te");
+		systemMaxTime = new LocalDateTime(te);
+
 		long t_start = System.currentTimeMillis();
-		doGroupDiscovery(conf.get("ts"), conf.get("te"), bw);
+		doGroupDiscovery(ts, te, bw);
 		long t_end = System.currentTimeMillis();
 		// write candidates into result file
 		stats.startTime = conf.get("ts");
-		stats.endTime = conf.get("ts");
+		stats.endTime = conf.get("te");
 
 		stats.elapsedTime = (t_end - t_start) / 1000.0;
+
+		R.clean();
 		stats.numGroups = R.size();
+
+		// write param to file
+		bw.write("m: " + minPts + "; e: " + eps + "; tau:" + tau + "; k:" + k);
+		bw.newLine();
+		bw.write("table: " + systemTable);
+		bw.newLine();
+		bw.write(ts + "; " + te);
+		bw.newLine();
 
 		stats.toFile(bw);
 		R.toFile(bw);
@@ -409,7 +421,6 @@ public class GroupDiscovery {
 
 	public static void doGroupDiscovery(String startTime, String endTime,
 			BufferedWriter bw) throws Exception {
-		// get a big chunk of data from database
 		/**
 		 * 1. fill up containers <br>
 		 * 2. update base time <br>
@@ -476,17 +487,20 @@ public class GroupDiscovery {
 				currTime = evt.time;
 			}
 			System.out.println("curr Time: " + currTime);
-			if (currTime.equals(Global.infati_MAXTIME)
-					|| currTime.equals(Global.elkMaxDateTIME)
-					|| currTime.equals(Global.elkMaxDateTIME)) {
+
+			// finish running the system
+			if (currTime.isAfter(systemMaxTime)) {
 				// stop the process
 				// examine entires in trie
 				trieFlush(aTrie.getRoot(), endTime);
 				OBJ.clear();
 				allObjs.clear();
 				eventQ.clear();
+				break;
 			}
-
+//			if (currTime.isAfter(new LocalDateTime("2001-03-27T06:40:30"))) {
+//				System.exit(0);
+//			}
 			syncMovingObjects();
 
 			if (evt.type == EventType.DISAPPEAR) {
@@ -731,7 +745,7 @@ public class GroupDiscovery {
 			// mo not really exit
 			// recompute exit time
 			mo.exitTime = getExitTime(mo, cluster);
-			eventQ.add(new MyEvent(mo.exitTime, mo.oid, mo.cid, EventType.EXIT));
+			updateEventQ(mo);
 		}
 	}
 
@@ -1225,13 +1239,16 @@ public class GroupDiscovery {
 					if (Arrays.asList(combination).contains(moid)) {
 						LeafEntry entry = aTrie.remove(combination, moid,
 								currTime);
-
 						if (entry != null) {
 							checkCandidate(entry);
 						}
 					}
 				}
 			}
+//			if (moid == 1146) {
+//				printTrie();
+//				System.exit(0);
+//			}
 		}
 
 		else if (type == 1) {
