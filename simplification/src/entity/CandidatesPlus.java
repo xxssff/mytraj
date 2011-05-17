@@ -17,6 +17,7 @@ public class CandidatesPlus {
 
 	public void add(LeafEntry le) {
 		boolean dominated = false;
+
 		// check if le is dominated by any leafEntry
 		for (LeafEntry l : candidates) {
 			if (LeafEntry.dominates(l, le)) {
@@ -40,10 +41,11 @@ public class CandidatesPlus {
 	}
 
 	public void toFile(BufferedWriter bw) throws Exception {
-		Collections.sort(candidates);
 		for (LeafEntry le : candidates) {
-			bw.append(le.toString());
-			bw.newLine();
+			if (le != null) {
+				bw.append(le.toString());
+				bw.newLine();
+			}
 		}
 	}
 
@@ -56,6 +58,33 @@ public class CandidatesPlus {
 
 	public int size() {
 		return candidates.size();
+	}
+
+	/**
+	 * run through the list to remove dominated cands
+	 */
+	public void clean() {
+		Collections.sort(candidates);
+		LeafEntry[] temp = candidates.toArray(new LeafEntry[0]);
+		for (int i = 0; i < temp.length; i++) {
+			boolean domed = false;
+			for (int j = i + 1; j < temp.length; j++) {
+				if (LeafEntry.dominates(temp[j], temp[i])) {
+					domed = true;
+					break;
+				}
+			}
+			if (domed) {
+				temp[i] = null;
+			}
+		}
+		List<LeafEntry> cands = new ArrayList<LeafEntry>(temp.length);
+		for (LeafEntry le : temp) {
+			if (le != null) {
+				cands.add(le);
+			}
+		}
+		this.candidates = cands;
 	}
 
 }
