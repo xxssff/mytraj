@@ -86,40 +86,6 @@ public class DBScan {
 		}
 	}
 
-	/**
-	 * 
-	 * @param objects
-	 * @param obj
-	 * @param eps
-	 * @param minPts
-	 * @param currTime
-	 * @return true 
-	 */
-	public static boolean expandClusterMember(ArrayList<MovingObject> objects,
-			MovingObject obj, double eps, double minPts, LocalTime currTime) {
-		ArrayList<MovingObject> seeds = DBScan.rangeQuery(obj, objects, eps);
-		if (seeds.size() < minPts) {
-			// border obj
-			// obj.exitTime = getExitTime(eps, obj, obj, currTime);
-			return false;
-		} else {
-			obj.label = true; // core object
-			seeds.remove(obj);
-
-			while (!seeds.isEmpty()) {
-				MovingObject currP = seeds.get(0);
-				if (currP.cid <= 0) {
-					currP.cid = obj.cid;
-					expandClusterMember(objects, currP, eps, minPts, currTime);
-				} else {
-					// merge cluster
-
-				}
-
-			}
-			return true;
-		}
-	}
 
 	/**
 	 * 

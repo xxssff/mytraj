@@ -14,7 +14,7 @@ import data.DataPoint;
  * 
  */
 
-public class MovingObject {
+public class MovingObject{
 	public int oid;
 	public DataPoint dataPoint; // has location and time
 	public boolean label; // {true=CORE, false=BORDER}
