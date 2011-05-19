@@ -1,17 +1,15 @@
 package algo;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import entity.Global;
 import entity.TimeLineSegment;
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
+ * @version 0.1 check common time between any two line segs; seeds should contain minPts different mo
  * 
  * @author xiaohui
  */
@@ -28,7 +26,6 @@ public class TrajDBScan {
 		for (TimeLineSegment obj : objects) {
 			if (obj.cid == 0) {
 				expandCluster(objects, obj, Global.nextCid(), eps, minPts);
-
 			}
 		}
 	}
@@ -46,7 +43,20 @@ public class TrajDBScan {
 	public static boolean expandCluster(List<TimeLineSegment> objects,
 			TimeLineSegment obj, int cid, double eps, double minPts) {
 		ArrayList<TimeLineSegment> seeds = rangeQuery(obj, objects, eps);
-		if (seeds.size() < minPts) {
+		Set<Integer> distinctRouteIds = new HashSet<Integer>(seeds.size());
+		
+		for(TimeLineSegment tls : seeds){
+			distinctRouteIds.add(tls.routeId);
+		}
+//		if (obj.routeId == 1080 || obj.routeId == 1101) {
+//			if (seeds.size() >= minPts) {
+//				System.out.println(obj.routeId);
+//				System.out.println(seeds);
+//				System.exit(0);
+//			}
+//		}
+
+		if (distinctRouteIds.size() < minPts) {
 			obj.cid = -1; // noise
 			return false;
 		} else {
@@ -93,11 +103,12 @@ public class TrajDBScan {
 	public static ArrayList<TimeLineSegment> rangeQuery(TimeLineSegment currMo,
 			List<TimeLineSegment> objects, double eps) {
 		ArrayList<TimeLineSegment> res = new ArrayList<TimeLineSegment>();
-
 		for (TimeLineSegment mo : objects) {
-			double distance = mo.distance(currMo);
-			if (distance <= eps) {
-				res.add(mo);
+			if (mo.getInterval().overlaps(currMo.getInterval())) {
+				double distance = mo.distance(currMo);
+				if (distance <= eps) {
+					res.add(mo);
+				}
 			}
 		}
 

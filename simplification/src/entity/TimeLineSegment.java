@@ -25,8 +25,8 @@ public class TimeLineSegment extends LineSegment {
 	public int time0En;
 	Interval interval;
 	public int cid; // clusterID; -1 is noise; 0 is unclassified
-	public boolean label; //core or border
-	
+	public boolean label; // core or border
+
 	public TimeLineSegment(int routeId, Coordinate coordinateSt,
 			Coordinate coordinateEn, LocalDateTime timeSt,
 			LocalDateTime timeEn, int time0St, int time0En) {
@@ -38,19 +38,17 @@ public class TimeLineSegment extends LineSegment {
 		this.time0En = time0En;
 		this.interval = new Interval(dateTimeSt.toDateTime(),
 				dateTimeEn.toDateTime());
-		this.cid =0;
+		this.cid = 0;
 	}
 
-
 	public String toString() {
-		return "[DataSegment: " + routeId + ", " + this.p0.toString() + ", "
-				+ this.p1.toString() + ", " + dateTimeSt.toString() + " "
-				+ dateTimeEn.toString() + " " + time0St + " " + time0En + "]";
+		return "[TimeLSeg: " + routeId + ", " + cid + ", " + this.p0.toString()
+				+ ", " + this.p1.toString() + ", " + dateTimeSt.toString()
+				+ " " + dateTimeEn.toString() + "]";
 	}
 
 	public Interval getInterval() {
 		return this.interval;
 	}
-	
 
 }

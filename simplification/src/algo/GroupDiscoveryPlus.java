@@ -57,16 +57,12 @@ public class GroupDiscoveryPlus {
 	/**
 	 * real params
 	 */
-	static LocalDateTime currTime = new LocalDateTime(Global.infati_MINTIME);
-	static LocalDateTime systemMaxTime = new LocalDateTime(
-			Global.infati_MAXTIME);
-	static LocalDateTime systemMinTime = new LocalDateTime(
-			Global.infati_MINTIME);
-	static String systemTable = Global.infatiTable;
+	static LocalDateTime currTime;
+	static LocalDateTime systemMinTime, systemMaxTime;
+	static String systemTable;
 	static int eps = 800; // UTM coordinates distances
 	static int minPts = 5;
 	static int tau = 10; // seconds
-	static int gap = 300; // how long is a chunk (min)
 
 	static ClusterEvolutionTable cet;
 	/**
@@ -92,7 +88,6 @@ public class GroupDiscoveryPlus {
 	static double alpha = 1;
 	static double beta = 1;
 	static double gamma = 1;
-	static NumTrie aTrie = new NumTrie();;
 
 	/**
 	 * cluster the moving objects in U
@@ -192,7 +187,6 @@ public class GroupDiscoveryPlus {
 		}
 
 		stats.numDataPoints = totalPoints;
-
 		return res;
 	}
 
@@ -219,6 +213,8 @@ public class GroupDiscoveryPlus {
 		beta = Double.parseDouble(conf.get("beta"));
 		gamma = Double.parseDouble(conf.get("gamma"));
 		systemTable = conf.get("systemTable");
+		
+		
 
 		System.out.println("e:" + eps + "\t" + "m:" + minPts + "\t" + "tau:"
 				+ tau + "\tk:" + k);
@@ -229,7 +225,10 @@ public class GroupDiscoveryPlus {
 
 		String ts = conf.get("ts");
 		String te = conf.get("te");
-		
+		systemMinTime = new LocalDateTime(ts);
+		systemMaxTime = new LocalDateTime(te);
+		currTime = systemMinTime;
+
 		long t_start = System.currentTimeMillis();
 		doGroupDiscovery(ts, te, bw);
 		long t_end = System.currentTimeMillis();
@@ -240,21 +239,20 @@ public class GroupDiscoveryPlus {
 		stats.elapsedTime = (t_end - t_start) / 1000.0;
 		stats.numGroups = cands.size();
 
-		//write param to file
-		bw.write("m: "+minPts+"; e: "+eps+"; tau:" +tau+"; k:"+k);
+		// write param to file
+		bw.write("m: " + minPts + "; e: " + eps + "; tau:" + tau + "; k:" + k);
 		bw.newLine();
-		bw.write("table: "+systemTable);
+		bw.write("table: " + systemTable);
 		bw.newLine();
-		bw.write(ts+"; "+te);
+		bw.write(ts + "; " + te);
 		bw.newLine();
-		
+
 		stats.toFile(bw);
+		cands.sortOnScore();
 		cands.toFile(bw);
 
 		bw.close();
 	}
-
-	
 
 	public static void doGroupDiscovery(String startTime, String endTime,
 			BufferedWriter bw) throws Exception {
@@ -312,7 +310,7 @@ public class GroupDiscoveryPlus {
 			System.out.println("curr Time: " + currTime);
 			System.out.println(evt.toString());
 
-			if (currTime.equals(Global.currMaxDateTIME)) {
+			if (currTime.isAfter(systemMaxTime)) {
 				// stop the process
 				for (Integer key : CS.keySet()) {
 					Cluster cluster = CS.get(key);
@@ -326,7 +324,7 @@ public class GroupDiscoveryPlus {
 			}
 
 			syncMovingObjects();
-
+			
 			if (evt.type == EventType.DISAPPEAR) {
 				MovingObject mo = allObjs.get(evt.OID);
 				if (mo != null) {
@@ -433,8 +431,11 @@ public class GroupDiscoveryPlus {
 
 				// handle candidate list
 				// System.out.println("After event:");
-				// printMutalDistance();
+//				printMutalDistance();
 				printCluster();
+//				if(!CS.isEmpty()){
+//					System.exit(0);
+//				}
 
 				// if(evt.OID==87812 && evt.type==EventType.EXPIRE){
 				// System.exit(0);
@@ -1104,12 +1105,4 @@ public class GroupDiscoveryPlus {
 		System.out.println("Candidates: " + cands.toString());
 	}
 
-	static void printTrie() {
-		System.out.println("printing trie...");
-		System.out.println(aTrie.toString());
-	}
-
-	static void printTrieSize() {
-		System.out.println("Trie Size:" + aTrie.getNumPaths());
-	}
 }
