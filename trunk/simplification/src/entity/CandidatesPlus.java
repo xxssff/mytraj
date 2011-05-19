@@ -87,4 +87,11 @@ public class CandidatesPlus {
 		this.candidates = cands;
 	}
 
+	/**
+	 * sort the entries based on scores
+	 */
+	public void sortOnScore() {
+		Collections.sort(candidates);
+	}
+
 }

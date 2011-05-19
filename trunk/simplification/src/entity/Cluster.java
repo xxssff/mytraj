@@ -22,13 +22,13 @@ public class Cluster {
 	public LocalDateTime expiryTime;
 	public Integer expireOID;
 	
-	// for convoy
+	//for convoy 
 	public boolean assigned;
 	
 	// public double endTime;
 
 	public Cluster(int clusterId) {
-		assigned = false;
+		assigned= false;
 		this.clusterId = clusterId;
 		members = new TreeSet<Integer>();
 	}

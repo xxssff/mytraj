@@ -78,12 +78,9 @@ public class GroupDiscovery {
 	/**
 	 * real params
 	 */
-	static LocalDateTime currTime = new LocalDateTime(Global.infati_MINTIME);
-	static LocalDateTime systemMaxTime = new LocalDateTime(
-			Global.infati_MAXTIME);
-	static LocalDateTime systemMinTime = new LocalDateTime(
-			Global.infati_MINTIME);
-	static String systemTable = Global.infatiTable;
+	static LocalDateTime currTime;
+	static LocalDateTime systemMinTime, systemMaxTime;
+	static String systemTable;
 	static int eps = 800; // UTM coordinates distances
 	static int minPts = 5;
 	static int tau = 10; // seconds
@@ -391,8 +388,10 @@ public class GroupDiscovery {
 
 		String ts = conf.get("ts");
 		String te = conf.get("te");
+		systemMinTime = new LocalDateTime(ts);
 		systemMaxTime = new LocalDateTime(te);
-
+		currTime = systemMinTime;
+		
 		long t_start = System.currentTimeMillis();
 		doGroupDiscovery(ts, te, bw);
 		long t_end = System.currentTimeMillis();
