@@ -37,7 +37,8 @@ import entity.Statistics;
 /**
  * 
  * 
- * 2011-04-24: finish groupDiscoveryPlus + clusterEvolveTable
+ * 2011-04-24: finish groupDiscoveryPlus + clusterEvolveTable <br>
+ * 2011-05-24: TODO expand search and compare topK result
  * 
  * @author xiaohui
  * 
@@ -63,7 +64,7 @@ public class GroupDiscoveryPlus {
 	static int eps = 800; // UTM coordinates distances
 	static int minPts = 5;
 	static int tau = 10; // seconds
-
+	static int k = 10;
 	static ClusterEvolutionTable cet;
 	/**
 	 * Test parameters
@@ -135,7 +136,6 @@ public class GroupDiscoveryPlus {
 				MyEvent event = new MyEvent(tempMo.exitTime, tempMo.oid,
 						tempC.clusterId, EventType.EXIT);
 				eventQ.add(event);
-
 			}
 		}
 
@@ -208,13 +208,13 @@ public class GroupDiscoveryPlus {
 		eps = Integer.parseInt(conf.get("eps"));
 		minPts = Integer.parseInt(conf.get("minPts"));
 		tau = Integer.parseInt(conf.get("tau"));
-		int k = Integer.parseInt(conf.get("k"));
+		k = Integer.parseInt(conf.get("k"));
 		alpha = Double.parseDouble(conf.get("alpha"));
 		beta = Double.parseDouble(conf.get("beta"));
 		gamma = Double.parseDouble(conf.get("gamma"));
 		systemTable = conf.get("systemTable");
-		
-		
+		int tolerance = Integer.parseInt(systemTable.substring(systemTable
+				.lastIndexOf("_") + 1));
 
 		System.out.println("e:" + eps + "\t" + "m:" + minPts + "\t" + "tau:"
 				+ tau + "\tk:" + k);
@@ -230,7 +230,7 @@ public class GroupDiscoveryPlus {
 		currTime = systemMinTime;
 
 		long t_start = System.currentTimeMillis();
-		doGroupDiscovery(ts, te, bw);
+		doGroupDiscovery(tolerance, ts, te, bw);
 		long t_end = System.currentTimeMillis();
 		// write candidates into result file
 		stats.startTime = conf.get("ts");
@@ -249,18 +249,21 @@ public class GroupDiscoveryPlus {
 
 		stats.toFile(bw);
 		cands.sortOnScore();
-		cands.toFile(bw);
+//		cands.toFile(bw);
 
 		bw.close();
 	}
 
-	public static void doGroupDiscovery(String startTime, String endTime,
-			BufferedWriter bw) throws Exception {
+	public static void doGroupDiscovery(int tolerance, String startTime,
+			String endTime, BufferedWriter bw) throws Exception {
 		/**
 		 * 1. fill up containers <br>
 		 * 2. update base time <br>
 		 */
 		// initial run
+		//enlarge range search according to lemma
+		eps += 2 * tolerance;
+
 		long t1 = System.currentTimeMillis();
 
 		if (systemTable.contains("elk")) {
@@ -324,7 +327,7 @@ public class GroupDiscoveryPlus {
 			}
 
 			syncMovingObjects();
-			
+
 			if (evt.type == EventType.DISAPPEAR) {
 				MovingObject mo = allObjs.get(evt.OID);
 				if (mo != null) {
@@ -431,11 +434,11 @@ public class GroupDiscoveryPlus {
 
 				// handle candidate list
 				// System.out.println("After event:");
-//				printMutalDistance();
+				// printMutalDistance();
 				printCluster();
-//				if(!CS.isEmpty()){
-//					System.exit(0);
-//				}
+				// if(!CS.isEmpty()){
+				// System.exit(0);
+				// }
 
 				// if(evt.OID==87812 && evt.type==EventType.EXPIRE){
 				// System.exit(0);
@@ -463,9 +466,12 @@ public class GroupDiscoveryPlus {
 		cet.cascadeAction();
 		stats.numCandidates = cet.getTotalSize();
 
-		cet.pushIntoCands(cands, tau);
-		// // print result list to console
-		// printR();
+//		cet.pushIntoCands(cands, tau);
+		List<LeafEntry> resultEntries = cet.pushIntoCands(cands, tau, k);
+		for(LeafEntry le : resultEntries){
+			bw.write(le.toString());
+			bw.newLine();
+		}
 	}
 
 	/**

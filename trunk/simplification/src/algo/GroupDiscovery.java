@@ -391,7 +391,7 @@ public class GroupDiscovery {
 		systemMinTime = new LocalDateTime(ts);
 		systemMaxTime = new LocalDateTime(te);
 		currTime = systemMinTime;
-		
+
 		long t_start = System.currentTimeMillis();
 		doGroupDiscovery(ts, te, bw);
 		long t_end = System.currentTimeMillis();
@@ -497,9 +497,9 @@ public class GroupDiscovery {
 				eventQ.clear();
 				break;
 			}
-//			if (currTime.isAfter(new LocalDateTime("2001-03-27T06:40:30"))) {
-//				System.exit(0);
-//			}
+			// if (currTime.isAfter(new LocalDateTime("2001-03-27T06:40:30"))) {
+			// System.exit(0);
+			// }
 			syncMovingObjects();
 
 			if (evt.type == EventType.DISAPPEAR) {
@@ -531,7 +531,7 @@ public class GroupDiscovery {
 					} else {
 						mo = allObjs.get(evt.OID);
 					}
-
+					System.out.println("curr mo: "+mo);
 					if (mo.cid > 0) {
 						// mo belongs to a cluster
 						// update the cluster of mo
@@ -1215,7 +1215,7 @@ public class GroupDiscovery {
 	private static void updateTrie(Cluster cluster, Integer moid, int type)
 			throws Exception {
 		System.out.println("updating trie...");
-		if (cluster == null) {
+		if (cluster == null || cluster.members.size()>30) {
 			return;
 		}
 		// System.out.println("In updating trie, cluster moid type"
@@ -1244,10 +1244,10 @@ public class GroupDiscovery {
 					}
 				}
 			}
-//			if (moid == 1146) {
-//				printTrie();
-//				System.exit(0);
-//			}
+			// if (moid == 1146) {
+			// printTrie();
+			// System.exit(0);
+			// }
 		}
 
 		else if (type == 1) {

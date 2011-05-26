@@ -5,7 +5,6 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -20,13 +19,15 @@ import entity.CandidatesPlus;
 import entity.Cluster;
 import entity.ConfReader;
 import entity.Convoy;
+import entity.ConvoyStatistics;
 import entity.Global;
 import entity.MovingObject;
 import entity.Statistics;
 import entity.TimeLineSegment;
 
 /**
- * @version 0.1 remove subsets from C
+ * @version 0.1 remove subsets from C at filter step
+ * @version 0.2 change removeRedundant to after refinement
  * @author xiaohui
  * 
  */
@@ -35,7 +36,7 @@ public class ConvoyDiscovery {
 
 	static CandidatesPlus cands;
 	// map id to clusters
-	static Statistics stats;
+	static ConvoyStatistics stats;
 	/**
 	 * real params
 	 */
@@ -50,7 +51,7 @@ public class ConvoyDiscovery {
 	static HashMap<Integer, ArrayList<DataPoint>> hm;
 	static HashMap<Integer, ArrayList<TimeLineSegment>> idToLineSegs;
 	static Data dataSource = new Data();
-	static int sysInterval;
+	static int sysInterval; // lambda in the convoy file
 
 	// fill allobjs
 	// public void fillAllObjs(){
@@ -59,8 +60,9 @@ public class ConvoyDiscovery {
 	// }
 	// allObjs.put(i, mo);
 	// }
-	public static void doConvoyDiscovery(String startTime, String endTime,
-			BufferedWriter bw) throws Exception {
+	public static void doConvoyDiscovery(int tolerance, String startTime,
+			String endTime, BufferedWriter bw) throws Exception {
+		System.out.println("Loading...");
 		long t1 = System.currentTimeMillis();
 		if (systemTable.contains("elk")) {
 			hm = dataSource.getDefinedTrajectories(systemTable, startTime,
@@ -73,6 +75,12 @@ public class ConvoyDiscovery {
 		long t2 = System.currentTimeMillis();
 		stats.loadDataTime = (t2 - t1) / 1000.0;
 		cleanHM();
+		stats.numMos = hm.size();
+		stats.numDataPoints = 0;
+		for (Integer i : hm.keySet()) {
+			ArrayList<DataPoint> dps = hm.get(i);
+			stats.numDataPoints += dps.size();
+		}
 		// fillAllObjs();
 		// construct line segments from data points
 		idToLineSegs = new HashMap<Integer, ArrayList<TimeLineSegment>>();
@@ -95,6 +103,14 @@ public class ConvoyDiscovery {
 				}
 			}
 		}
+
+		// System.out.println(hm.get(90616).get(0));
+		// System.out.println(hm.get(90616).get(1));
+		// System.out.println(idToLineSegs.get(90616));
+		//
+		// System.out.println(idToLineSegs.get(90616).size());
+		// System.exit(0);
+		// get intervals
 		List<Interval> list = new ArrayList<Interval>();
 		DateTime sTime = new DateTime(startTime);
 		DateTime eTime = new DateTime(endTime);
@@ -105,10 +121,59 @@ public class ConvoyDiscovery {
 			list.add(tempInterval);
 		}
 
-		List<Convoy> cv = cutsFilter(list, minPts, tau, eps);
-		System.out.println("before refinement: " + cv);
-		Set<Convoy> convoySet = cutsRefinement(cv, minPts, tau, eps);
-		System.out.println(convoySet);
+		System.out.print("Cuts filter...");
+		List<Convoy> cv = cutsFilter(list, minPts, tau, eps + 2 * tolerance);
+		System.out.println("done!");
+		System.out.print("cuts refinement...");
+		List<Convoy> convoyList = cutsRefinement(cv, minPts, tau, eps);
+		System.out.println("size: " + convoyList.size());
+		System.out.print("Removing refinement...");
+		List<Convoy> convoyResult = removeRedundantResult(convoyList);
+		System.out.print("num conovys: " + convoyResult.size());
+		stats.numConvoys = convoyResult.size();
+
+		System.out.println("done!");
+		System.out.println("Num convoys found: " + convoyList.size());
+		System.out.println("Wrinting to file...");
+		for (Convoy c : convoyList) {
+			bw.write(c.toString());
+			bw.newLine();
+		}
+	}
+
+	private static List<Convoy> removeRedundantResult(List<Convoy> convoyList) {
+		boolean[] toBeDel = new boolean[convoyList.size()];
+		Convoy[] cys = convoyList.toArray(new Convoy[0]);
+		List<Convoy> convoyResult = new ArrayList<Convoy>(convoyList.size());
+		// // loop the array to remove subsets
+		for (int i = 0; i < cys.length; i++) {
+			for (int j = 0; j < cys.length; j++) {
+				if (isProperSubset(cys[i], cys[j])) {
+					toBeDel[i] = true;
+				}
+			}
+		}
+		for (int i = 0; i < toBeDel.length; i++) {
+			if (toBeDel[i]) {
+				cys[i] = null;
+			}
+		}
+
+		// add into CS, avoid duplicate clusters with identical members
+		for (Convoy c : cys) {
+			if (c != null) {
+				boolean put = true;
+				for (Convoy con : convoyResult) {
+					if (con.members.equals(c.members)) {
+						put = false;
+					}
+				}
+				if (put) {
+					convoyResult.add(c);
+				}
+			}
+		}
+		return convoyResult;
 	}
 
 	/**
@@ -209,61 +274,58 @@ public class ConvoyDiscovery {
 		return res;
 	}
 
-	
-	private static void fillResult(List<Convoy> convoyList,
-			List<TimeLineSegment> g, LocalDateTime startTime,
-			LocalDateTime endTime) {
+	// private static void fillResult(List<Convoy> convoyList,
+	// List<TimeLineSegment> g, LocalDateTime startTime,
+	// LocalDateTime endTime) {
+	//
+	// Set<Integer> cids = new HashSet<Integer>();
+	// for (TimeLineSegment tempMo : g) {
+	// if (tempMo.cid > 0) {
+	// cids.add(tempMo.cid);
+	// }
+	// }
+	// Cluster[] cls = new Cluster[cids.size()];
+	// boolean[] toBeDel = new boolean[cids.size()];
+	// int index = 0;
+	// for (Integer cid : cids) {
+	// Cluster tempC = new Cluster(cid);
+	// for (TimeLineSegment tempMo : g) {
+	// if (tempMo.cid == tempC.clusterId) {
+	// tempC.add(tempMo.routeId);
+	// }
+	// }
+	// cls[index++] = tempC;
+	// }
+	//
+	// // loop the array to remove subsets
+	// for (int i = 0; i < cls.length; i++) {
+	// for (int j = 0; j < cls.length; j++) {
+	// if (isProperSubset(cls[i], cls[j])) {
+	// toBeDel[i] = true;
+	// }
+	// }
+	// }
+	// for (int i = 0; i < toBeDel.length; i++) {
+	// if (toBeDel[i]) {
+	// cls[i] = null;
+	// }
+	// }
+	// // add into CS, avoid duplicate clusters with identical members
+	// for (Cluster c : cls) {
+	// if (c != null) {
+	// boolean put = true;
+	// for (Convoy con : convoyList) {
+	// if (con.members.equals(c.members)) {
+	// put = false;
+	// }
+	// }
+	// if (put) {
+	// convoyList.add(new Convoy(c, startTime, endTime));
+	// }
+	// }
+	// }
+	// }
 
-		Set<Integer> cids = new HashSet<Integer>();
-		for (TimeLineSegment tempMo : g) {
-			if (tempMo.cid > 0) {
-				cids.add(tempMo.cid);
-			}
-		}
-		Cluster[] cls = new Cluster[cids.size()];
-		boolean[] toBeDel = new boolean[cids.size()];
-		int index = 0;
-		for (Integer cid : cids) {
-			Cluster tempC = new Cluster(cid);
-			for (TimeLineSegment tempMo : g) {
-				if (tempMo.cid == tempC.clusterId) {
-					tempC.add(tempMo.routeId);
-				}
-			}
-			cls[index++] = tempC;
-		}
-
-		// loop the array to remove subsets
-		for (int i = 0; i < cls.length; i++) {
-			for (int j = 0; j < cls.length; j++) {
-				if (isProperSubset(cls[i], cls[j])) {
-					toBeDel[i] = true;
-				}
-			}
-		}
-		for (int i = 0; i < toBeDel.length; i++) {
-			if (toBeDel[i]) {
-				cls[i] = null;
-			}
-		}
-		// add into CS, avoid duplicate clusters with identical members
-		for (Cluster c : cls) {
-			if (c != null) {
-				boolean put = true;
-				for (Convoy con : convoyList) {
-					if (con.members.equals(c.members)) {
-						put = false;
-					}
-				}
-				if (put) {
-					convoyList.add(new Convoy(c, startTime, endTime));
-				}
-			}
-		}
-	}
-
-	
-	
 	/**
 	 * fill cluster with results from dbscan
 	 * 
@@ -285,8 +347,9 @@ public class ConvoyDiscovery {
 				cids.add(tempMo.cid);
 			}
 		}
+
 		Cluster[] cls = new Cluster[cids.size()];
-		boolean[] toBeDel = new boolean[cids.size()];
+
 		int index = 0;
 		for (Integer cid : cids) {
 			Cluster tempC = new Cluster(cid);
@@ -297,46 +360,21 @@ public class ConvoyDiscovery {
 			}
 			cls[index++] = tempC;
 		}
-
-		// loop the array to remove subsets
-		for (int i = 0; i < cls.length; i++) {
-			for (int j = 0; j < cls.length; j++) {
-				if (isProperSubset(cls[i], cls[j])) {
-					toBeDel[i] = true;
-				}
-			}
-		}
-		for (int i = 0; i < toBeDel.length; i++) {
-			if (toBeDel[i]) {
-				cls[i] = null;
-			}
-		}
-		// add into CS, avoid duplicate clusters with identical members
 		for (Cluster c : cls) {
-			if (c != null) {
-				boolean put = true;
-				for (Convoy con : convoyList) {
-					if (con.members.equals(c.members)) {
-						put = false;
-					}
-				}
-				if (put) {
-					convoyList.add(new Convoy(c, startTime, endTime));
-				}
+				convoyList.add(new Convoy(c, startTime, endTime));
 			}
-		}
 	}
 
 	/**
 	 * 
-	 * @param c1
-	 * @param c2
+	 * @param cys
+	 * @param cys2
 	 * @return true iff c1 is proper subset of c2
 	 */
-	private static boolean isProperSubset(Cluster c1, Cluster c2) {
-		Set<Integer> mem1 = c1.members;
+	private static boolean isProperSubset(Convoy cys, Convoy cys2) {
+		Set<Integer> mem1 = cys.members;
 		int size = mem1.size();
-		Set<Integer> mem2 = c2.members;
+		Set<Integer> mem2 = cys2.members;
 		if (mem1.size() >= mem2.size()) {
 			return false;
 		}
@@ -401,7 +439,7 @@ public class ConvoyDiscovery {
 	 */
 	private static List<Convoy> cutsFilter(List<Interval> partitions,
 			int minPts, int k, double e) {
-		int lambda = 1800;// 86400 / 2; // for elk data: 101001600
+		System.out.println("When entering cutsFilter, e:" + e);
 		List<Convoy> V = new ArrayList<Convoy>();
 		List<Convoy> Vcand = new ArrayList<Convoy>();
 		// HashMap<Integer, Cluster> C = new HashMap<Integer, Cluster>();
@@ -411,8 +449,7 @@ public class ConvoyDiscovery {
 		for (int l = 0; l < partitions.size(); l++) {
 			Vnext = new ArrayList<Convoy>();
 			Interval interval = partitions.get(l);
-			
-			System.out.println("iteraion " + l);
+
 			List<TimeLineSegment> G = new ArrayList<TimeLineSegment>();
 
 			for (Integer i : idToLineSegs.keySet()) {
@@ -429,17 +466,31 @@ public class ConvoyDiscovery {
 				}
 			}
 
+			// for (int i = 30; i < 40; i++) {
+			// System.out.println(G.get(i));
+			// }
 			TrajDBScan.doDBScan(G, e, minPts);
 
 			// for(TimeLineSegment tls : G){
 			// System.out.println(tls);
 			// }
 			convoyList = new ArrayList<Convoy>();
+			// for (TimeLineSegment tls : G) {
+			// System.out.println(tls);
+			// }
+			// System.exit(0);
+
 			fillClusters(convoyList, G, interval.getStart().toLocalDateTime(),
 					interval.getEnd().toLocalDateTime());
+			stats.numClusters += convoyList.size();
 
+			System.out.println(interval);
+			System.out.println("Num clusters: " + convoyList.size());
+			// for (Convoy c : convoyList) {
+			// System.out.println(c);
+			// }
+			// System.exit(0);
 			for (Convoy v : V) {
-				System.out.println("looping V...");
 				v.assigned = false;
 				for (Convoy c : convoyList) {
 					Set<Integer> tempSet = new HashSet<Integer>(c.members);
@@ -448,7 +499,7 @@ public class ConvoyDiscovery {
 					if (tempSet.size() >= minPts) {
 						v.assigned = true;
 						v.members = tempSet;
-						v.lifetime = v.lifetime + lambda;
+						v.lifetime = v.lifetime + sysInterval;
 						v.endTime = c.endTime;
 						Vnext.add(v);
 						c.assigned = true;
@@ -461,7 +512,7 @@ public class ConvoyDiscovery {
 			}
 			for (Convoy c : convoyList) {
 				if (!c.assigned) {
-					c.lifetime = lambda;
+					c.lifetime = sysInterval;
 					Vnext.add(c);
 				}
 			}
@@ -511,9 +562,9 @@ public class ConvoyDiscovery {
 	// DataPoint res = dataSource.getImaginaryPoint(dp1, dp2, ldt);
 	// return res;
 	// }
-	private static Set<Convoy> cutsRefinement(List<Convoy> Vcand, int minPts,
+	private static List<Convoy> cutsRefinement(List<Convoy> Vcand, int minPts,
 			int k, double e) throws Exception {
-		Set<Convoy> convoySet = new HashSet<Convoy>();
+		List<Convoy> convoyList = new ArrayList<Convoy>();
 		for (Convoy v : Vcand) {
 			LocalDateTime t_start = v.startTime;
 			LocalDateTime t_end = v.endTime;
@@ -523,12 +574,27 @@ public class ConvoyDiscovery {
 				ldts.add(l);
 			}
 			List<Convoy> cons = CMC(v.members, ldts, minPts, k, eps);
+			// System.out.println("after CMC");
+			// System.out.println(cons);
 			for (Convoy c : cons) {
-				convoySet.add(c);
+				if (!contains(c, convoyList)) {
+					convoyList.add(c);
+				}
 			}
 		}
-		
-		return convoySet;
+
+		return convoyList;
+	}
+
+	private static boolean contains(Convoy c, List<Convoy> convoyList) {
+		boolean contain = false;
+		for (Convoy convoy : convoyList) {
+			if (convoy.equals(c)) {
+				contain = true;
+				break;
+			}
+		}
+		return contain;
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -546,24 +612,27 @@ public class ConvoyDiscovery {
 		minPts = Integer.parseInt(conf.get("minPts"));
 		tau = Integer.parseInt(conf.get("tau"));
 		systemTable = conf.get("systemTable");
+		int tolerance = Integer.parseInt(systemTable.substring(systemTable
+				.lastIndexOf("_") + 1));
+
 		sysInterval = Integer.parseInt(conf.get("k"));
 
 		bw.write("Convoy Discovery Output=====");
 		bw.newLine();
 		System.out.println("e:" + eps + "\t" + "m:" + minPts + "\t" + "tau:"
-				+ tau);
+				+ tau + "\t lambda:" + sysInterval);
 
-		stats = new Statistics();
+		stats = new ConvoyStatistics();
 
-		String ts = "2001-03-27T16:23:24"; // conf.get("ts");
-		String te = "2001-03-27T17:01:17"; // conf.get("te");
+		String ts = conf.get("ts");
+		String te = conf.get("te");
 
 		long t_start = System.currentTimeMillis();
-		doConvoyDiscovery(ts, te, bw);
+		doConvoyDiscovery(tolerance, ts, te, bw);
 		long t_end = System.currentTimeMillis();
 		// write candidates into result file
-		stats.startTime = "16:02:00"; // conf.get("ts");
-		stats.endTime = "17:01:59"; // conf.get("te");
+		stats.startTime = conf.get("ts");
+		stats.endTime = conf.get("te");
 
 		stats.elapsedTime = (t_end - t_start) / 1000.0;
 
@@ -572,11 +641,13 @@ public class ConvoyDiscovery {
 		bw.newLine();
 		bw.write("table: " + systemTable);
 		bw.newLine();
+		bw.write("lambda: " + sysInterval);
+		bw.newLine();
 		bw.write(ts + "; " + te);
 		bw.newLine();
-
 		stats.toFile(bw);
-
 		bw.close();
+		System.out
+				.println("All done! Check output file " + conf.get("outFile"));
 	}
 }
