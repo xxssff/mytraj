@@ -83,63 +83,63 @@ public class ClusterEvolutionTable {
 		}
 	}
 
-//	/**
-//	 * implementation exactly as in the paper: RevHist
-//	 * 
-//	 * @param entries
-//	 * @param enArr
-//	 */
-//	private void revHist(LeafEntry[] enArr, List<LeafEntry> entries) {
-//		int i = entries.size() - 1;
-//		while (i > 0) {
-//			LeafEntry curr = entries.get(i);
-//			LeafEntry prev = entries.get(i - 1);
-//			Set<Integer> currMemSet = convertArr2Set(curr.subCluster);
-//			int size = currMemSet.size();
-//			Set<Integer> prevMemSet = convertArr2Set(prev.subCluster);
-//			currMemSet.retainAll(prevMemSet);
-//			if (currMemSet.size() == size) {
-//				// case 1: intersection is currSet
-//				curr.ts = prev.ts;
-//				curr.updateScore();
-//			} else if (currMemSet.equals(prevMemSet)) {
-//				prev.te = curr.te;
-//				prev.updateScore();
-//			} else {
-//				LeafEntry le_new = new LeafEntry(
-//						currMemSet.toArray(new Integer[0]), prev.ts,
-//						enArr[i].getDistStart());
-//				le_new.endCluster(curr.te, curr.getDistEnd(), curr.getAlpha(),
-//						curr.getBeta(), curr.getGamma());
-//				// insert at the right pos
-//				insertEntry(le_new, entries);
-//				int j = i - 2;
-//				while (j >= 0 && currMemSet.size() >= minPts) {
-//					LeafEntry pEntry = entries.get(j);
-//					Set<Integer> temp = convertArr2Set(pEntry.subCluster);
-//					int size1 = currMemSet.size();
-//					currMemSet.retainAll(temp);
-//					if (currMemSet.size() < minPts) {
-//						break;
-//					} else if (currMemSet.size() == size1) {
-//						le_new.ts = pEntry.ts;
-//						le_new.updateScore();
-//					} else {
-//						LeafEntry le_new1 = new LeafEntry(
-//								currMemSet.toArray(new Integer[0]), pEntry.ts,
-//								pEntry.getDistStart());
-//						le_new1.endCluster(curr.te, curr.getDistEnd(),
-//								curr.getAlpha(), curr.getBeta(),
-//								curr.getGamma());
-//						// insert at the right pos
-//						insertEntry(le_new, entries);
-//					}
-//					j--;
-//				}
-//			}
-//			i--;
-//		}
-//	}
+	// /**
+	// * implementation exactly as in the paper: RevHist
+	// *
+	// * @param entries
+	// * @param enArr
+	// */
+	// private void revHist(LeafEntry[] enArr, List<LeafEntry> entries) {
+	// int i = entries.size() - 1;
+	// while (i > 0) {
+	// LeafEntry curr = entries.get(i);
+	// LeafEntry prev = entries.get(i - 1);
+	// Set<Integer> currMemSet = convertArr2Set(curr.subCluster);
+	// int size = currMemSet.size();
+	// Set<Integer> prevMemSet = convertArr2Set(prev.subCluster);
+	// currMemSet.retainAll(prevMemSet);
+	// if (currMemSet.size() == size) {
+	// // case 1: intersection is currSet
+	// curr.ts = prev.ts;
+	// curr.updateScore();
+	// } else if (currMemSet.equals(prevMemSet)) {
+	// prev.te = curr.te;
+	// prev.updateScore();
+	// } else {
+	// LeafEntry le_new = new LeafEntry(
+	// currMemSet.toArray(new Integer[0]), prev.ts,
+	// enArr[i].getDistStart());
+	// le_new.endCluster(curr.te, curr.getDistEnd(), curr.getAlpha(),
+	// curr.getBeta(), curr.getGamma());
+	// // insert at the right pos
+	// insertEntry(le_new, entries);
+	// int j = i - 2;
+	// while (j >= 0 && currMemSet.size() >= minPts) {
+	// LeafEntry pEntry = entries.get(j);
+	// Set<Integer> temp = convertArr2Set(pEntry.subCluster);
+	// int size1 = currMemSet.size();
+	// currMemSet.retainAll(temp);
+	// if (currMemSet.size() < minPts) {
+	// break;
+	// } else if (currMemSet.size() == size1) {
+	// le_new.ts = pEntry.ts;
+	// le_new.updateScore();
+	// } else {
+	// LeafEntry le_new1 = new LeafEntry(
+	// currMemSet.toArray(new Integer[0]), pEntry.ts,
+	// pEntry.getDistStart());
+	// le_new1.endCluster(curr.te, curr.getDistEnd(),
+	// curr.getAlpha(), curr.getBeta(),
+	// curr.getGamma());
+	// // insert at the right pos
+	// insertEntry(le_new, entries);
+	// }
+	// j--;
+	// }
+	// }
+	// i--;
+	// }
+	// }
 
 	/**
 	 * 
@@ -200,7 +200,6 @@ public class ClusterEvolutionTable {
 					cands.add(le);
 				}
 			}
-
 		}
 	}
 
@@ -210,6 +209,13 @@ public class ClusterEvolutionTable {
 			sum += table.get(key).size();
 		}
 		return sum;
+	}
+
+	public List<LeafEntry> pushIntoCands(CandidatesPlus cands, int tau, int k) {
+		pushIntoCands(cands, tau);
+		cands.sort();
+		return cands.getTopK(k);
+		
 	}
 
 }

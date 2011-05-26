@@ -94,4 +94,23 @@ public class CandidatesPlus {
 		Collections.sort(candidates);
 	}
 
+	public void sort() {
+		Collections.sort(candidates);
+	}
+
+	public List<LeafEntry> getTopK(int k) {
+		if(this.candidates.size() <=k)
+			return candidates;
+		else
+		{
+			List<LeafEntry> entries = new ArrayList<LeafEntry>();
+			int i=0;
+			while(i<k){
+				entries.add(this.candidates.get(i));
+				i++;
+			}
+			return entries;
+		}
+	}
+
 }
