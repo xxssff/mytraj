@@ -165,7 +165,7 @@ public class Util {
     public void compareVaryingM() throws IOException {
         int simpl = 50;
 
-        FileWriter fstreamOut = new FileWriter("C:\\paper_2\\list_comparision\\varying_m\\precisionM.dat");
+        FileWriter fstreamOut = new FileWriter("C:\\paper_2\\list_comparision\\result\\precisionM.dat");
         BufferedWriter out = new BufferedWriter(fstreamOut);
 
         String line = "delta m P MAP nDCG";
@@ -227,7 +227,7 @@ public class Util {
     public void compareVaryingE() throws IOException {
         int simpl = 50;
 
-        FileWriter fstreamOut = new FileWriter("C:\\paper_2\\list_comparision\\varying_e\\precisionE.dat");
+        FileWriter fstreamOut = new FileWriter("C:\\paper_2\\list_comparision\\result\\precisionE.dat");
         BufferedWriter out = new BufferedWriter(fstreamOut);
 
         String line = "delta e P MAP nDCG";
