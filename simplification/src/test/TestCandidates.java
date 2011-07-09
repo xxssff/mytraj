@@ -27,28 +27,28 @@ public class TestCandidates {
 
 		LocalDateTime ldt = new LocalDateTime(Global.infati_MAXTIME);
 		
-		LeafEntry le1 = new LeafEntry(a1, ldt, 1);
-		le1.endCluster(ldt.plusMinutes(1), 1, 0.5, 0.5, 1);
+		LeafEntry le1 = new LeafEntry(a1, ldt);
+		le1.endCluster(ldt.plusMinutes(1), 0.5, 0.5 );
 		System.out.println(le1.toString());
 		
-		LeafEntry le2 = new LeafEntry(a2, ldt, 1);
-		le2.endCluster(ldt.plusMinutes(1), 1, 0.5, 0.5, 1);
+		LeafEntry le2 = new LeafEntry(a2, ldt);
+		le2.endCluster(ldt.plusMinutes(1),  0.5, 0.5 );
 		System.out.println(le2.toString());
 		System.out.println(LeafEntry.dominates(le2, le1));
 		System.out.println(LeafEntry.dominates(le1, le2));
 		
 	
-		LeafEntry le3 = new LeafEntry(a3, ldt, 1);
-		le3.endCluster(ldt.plusMinutes(1), 1, 0.5, 0.5, 1);
+		LeafEntry le3 = new LeafEntry(a3, ldt);
+		le3.endCluster(ldt.plusMinutes(1),0.5, 0.5);
 		
 		
-		LeafEntry le4 = new LeafEntry(a4, ldt, 1);
-		le4.endCluster(ldt.plusMinutes(1), 1, 0.5, 0.5, 1);
+		LeafEntry le4 = new LeafEntry(a4, ldt);
+		le4.endCluster(ldt.plusMinutes(1),  0.5, 0.5);
 		
-		LeafEntry le5 = new LeafEntry(a5, ldt, 1);
-		le5.endCluster(ldt.plusMinutes(1), 1, 0.5, 0.5, 1);
+		LeafEntry le5 = new LeafEntry(a5, ldt);
+		le5.endCluster(ldt.plusMinutes(1), 0.5, 0.5);
 		
-		CandidatesPlus cList = new CandidatesPlus();
+		CandidatesPlus cList = new CandidatesPlus(10);
 		cList.add(le3);
 		cList.add(le1);
 		cList.add(le2);

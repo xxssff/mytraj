@@ -21,14 +21,14 @@ public class Cluster {
 	public Set<Integer> members;
 	public LocalDateTime expiryTime;
 	public Integer expireOID;
-	
-	//for convoy 
+
+	// for convoy
 	public boolean assigned;
-	
+
 	// public double endTime;
 
 	public Cluster(int clusterId) {
-		assigned= false;
+		assigned = false;
 		this.clusterId = clusterId;
 		members = new TreeSet<Integer>();
 	}
@@ -78,4 +78,5 @@ public class Cluster {
 	public String toString() {
 		return this.clusterId + " " + members;
 	}
+
 }
