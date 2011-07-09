@@ -7,6 +7,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.joda.time.LocalDateTime;
+import org.joda.time.Seconds;
+
 import trie.LeafEntry;
 
 /**
@@ -71,10 +74,8 @@ public class ClusterEvolutionTable {
 				} else {
 					// new entry in the table
 					LeafEntry le_new = new LeafEntry(
-							memSet.toArray(new Integer[0]), enArr[i].ts,
-							enArr[i].getDistStart());
-					le_new.endCluster(le.te, le.getDistEnd(), le.getAlpha(),
-							le.getBeta(), le.getGamma());
+							memSet.toArray(new Integer[0]), enArr[i].ts);
+					le_new.endCluster(le.te, le.getAlpha(), le.getBeta());
 					entries.add(le_new);
 				}
 			} else {
@@ -84,7 +85,6 @@ public class ClusterEvolutionTable {
 	}
 
 	// /**
-	// * implementation exactly as in the paper: RevHist
 	// *
 	// * @param entries
 	// * @param enArr
@@ -200,6 +200,7 @@ public class ClusterEvolutionTable {
 					cands.add(le);
 				}
 			}
+
 		}
 	}
 
@@ -213,9 +214,80 @@ public class ClusterEvolutionTable {
 
 	public List<LeafEntry> pushIntoCands(CandidatesPlus cands, int tau, int k) {
 		pushIntoCands(cands, tau);
-		cands.sort();
 		return cands.getTopK(k);
-		
 	}
 
+	/**
+	 * pre-cond: the cet table is not cascaded yet TODO it is wrong to have
+	 * hashmap and key
+	 * 
+	 * @param cands
+	 * @param tau
+	 * @param k
+	 * @return
+	 */
+	public static List<LeafEntry> pushIntoCandsUB(ClusterEvolutionTable cet,
+			CandidatesPlus cands, int tau, int k, double alpha, double beta) {
+		int counter = 0;
+		for (int key : cet.table.keySet()) {
+			// add into res directly
+			List<LeafEntry> entries = cet.table.get(key);
+			LeafEntry[] enArr = entries.toArray(new LeafEntry[0]);
+			for (int i = enArr.length - 1; i > 0; i--) {
+				cet.cascade(i, enArr, entries);
+			}
+
+			for (LeafEntry le : entries) {
+				if (le.getDuration() >= tau) {
+					cands.add(le);
+				}
+			}
+			if (counter >= k) {
+				break;
+			}
+			counter++;
+		}
+
+		counter = -1;
+		for (int key : cet.table.keySet()) {
+			counter++;
+			if (counter < k) {
+				continue;
+			}
+			List<LeafEntry> entries = cet.table.get(key);
+			double ubscore = cet.getUpperBound(entries, alpha, beta);
+			if (ubscore >= cands.minScore) {
+				// need to cascade
+				LeafEntry[] enArr = entries.toArray(new LeafEntry[0]);
+				for (int i = enArr.length - 1; i > 0; i--) {
+					cet.cascade(i, enArr, entries);
+				}
+				for (LeafEntry le : entries) {
+					if (le.getDuration() >= tau
+							&& le.getScore() > cands.minScore) {
+						cands.add(le);
+					}
+				}
+			}
+
+		}
+		return cands.getList();
+	}
+
+	private double getUpperBound(List<LeafEntry> entries, double alpha,
+			double beta) {
+		int maxCard = 3;
+		int duration = Seconds.secondsBetween(entries.get(0).ts,
+				entries.get(entries.size() - 1).te).getSeconds();
+		for (LeafEntry le : entries) {
+			if (le.subCluster.length > maxCard) {
+				maxCard = le.subCluster.length;
+			}
+		}
+		return alpha * maxCard + beta * duration;
+	}
+
+	public int size() {
+		return table.size();
+	}
 }

@@ -22,22 +22,19 @@ public class LeafEntry implements Comparable {
 	public Integer[] subCluster; // integers
 	public LocalDateTime ts;
 	public LocalDateTime te;
-	double alpha, beta, gamma;
+	double alpha, beta;
 	double duration;
 	double score;
-	double avgDistStart, avgDistEnd, compactness;
 	static DecimalFormat formatter = new DecimalFormat("#.###");
 
-	public LeafEntry(Integer[] members, LocalDateTime currTime, double avgDistStart) {
+	public LeafEntry(Integer[] members, LocalDateTime currTime) {
 		this.ts = currTime;
 		this.subCluster = members;
-		this.avgDistStart = avgDistStart;
 	}
 
-	public LeafEntry(Set<Integer> members, LocalDateTime currTime, double avgDist) {
+	public LeafEntry(Set<Integer> members, LocalDateTime currTime) {
 		subCluster = members.toArray(new Integer[0]);
 		this.ts = currTime;
-		this.avgDistStart = avgDist;
 	}
 
 	@Override
@@ -80,20 +77,16 @@ public class LeafEntry implements Comparable {
 	 * @param beta
 	 * @param gamma
 	 */
-	public void endCluster(LocalDateTime currTime, double avgDistEnd, double alpha,
-			double beta, double gamma) {
+	public void endCluster(LocalDateTime currTime, double alpha, double beta) {
 		this.te = currTime;
-		this.avgDistEnd = avgDistEnd;
 		if (ts == null || currTime == null) {
 			this.duration = 100;
 		} else {
 			this.duration = Seconds.secondsBetween(ts, currTime).getSeconds();
 		}
-		this.compactness = 2 / (avgDistStart + avgDistEnd);
 		this.alpha = alpha;
 		this.beta = beta;
-		this.gamma = gamma;
-		this.score = alpha * size() + beta * duration + gamma * compactness;
+		this.score = alpha * size() + beta * duration;
 	}
 
 	public double getAlpha() {
@@ -104,28 +97,12 @@ public class LeafEntry implements Comparable {
 		return this.beta;
 	}
 
-	public double getGamma() {
-		return this.gamma;
-	}
-
 	/**
 	 * 
 	 * @return duration;available only when a cluster ends
 	 */
 	public double getDuration() {
 		return duration;
-	}
-
-	public double getDistStart() {
-		return avgDistStart;
-	}
-
-	/**
-	 * 
-	 * @return avgDistEnd
-	 */
-	public double getDistEnd() {
-		return this.avgDistEnd;
 	}
 
 	/**
@@ -136,8 +113,8 @@ public class LeafEntry implements Comparable {
 	public double getScore() {
 		return score;
 	}
-	
-	public LocalDateTime getStartTime(){
+
+	public LocalDateTime getStartTime() {
 		return this.ts;
 	}
 
@@ -149,10 +126,8 @@ public class LeafEntry implements Comparable {
 			String s1 = ts.toString().substring(0, ts.toString().indexOf("."));
 			String s2 = te.toString().substring(0, te.toString().indexOf("."));
 
-			return "[s compact dur mems: " + formatter.format(score) + " "
-					+ formatter.format(this.compactness) + " "
-					// + Seconds.secondsBetween(ts, te).getSeconds()
-					+ s1 + " " + s2 + " " + Arrays.toString(subCluster) + "]";
+			return "[s rho mems: " + formatter.format(score) + " " + s1 + " "
+					+ s2 + " " + Arrays.toString(subCluster) + "]";
 		}
 	}
 
@@ -169,6 +144,6 @@ public class LeafEntry implements Comparable {
 		} else {
 			this.duration = Seconds.secondsBetween(ts, te).getSeconds();
 		}
-		this.score = alpha * size() + beta * duration + gamma * compactness;
+		this.score = alpha * size() + beta * duration;
 	}
 }

@@ -1,18 +1,30 @@
 package entity;
 
+/**
+ * @author xiaohui
+ * add minScore field
+ */
 import java.io.BufferedWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import trie.LeafEntry;
 
 public class CandidatesPlus {
-	public List<LeafEntry> candidates;
+
+	public LeafEntry[] candidates; // size = k
+	int numEntries;
+	int k;
+	// minScore should be increasing
+	public double minScore = Double.MIN_VALUE;
 
 	// int minIdx;// pointer to the entry with minScore
-	public CandidatesPlus() {
-		candidates = new ArrayList<LeafEntry>(516);
+	public CandidatesPlus(int k) {
+		candidates = new LeafEntry[k];
+		this.numEntries = 0;
+		this.k = k;
 	}
 
 	public void add(LeafEntry le) {
@@ -20,23 +32,48 @@ public class CandidatesPlus {
 
 		// check if le is dominated by any leafEntry
 		for (LeafEntry l : candidates) {
-			if (LeafEntry.dominates(l, le)) {
+			if (l != null && LeafEntry.dominates(l, le)) {
 				dominated = true;
 			}
 		}
 
 		// check if le dominates someone else
 		if (!dominated) {
-			List<LeafEntry> cands = new ArrayList<LeafEntry>(
-					candidates.size() + 1);
-			for (LeafEntry l : candidates) {
-				if (!LeafEntry.dominates(le, l)) {
-					cands.add(l);
+			for (int i = 0; i < candidates.length; i++) {
+				if (candidates[i] != null
+						&& LeafEntry.dominates(le, candidates[i])) {
+					candidates[i] = null;
+					numEntries--;
 				}
 			}
-			cands.add(le);
-			this.candidates.clear();
-			this.candidates = cands;
+			// add le
+			if (numEntries < k) {
+				for (int i = 0; i < candidates.length; i++) {
+					if (candidates[i] == null) {
+						candidates[i] = le;
+						numEntries++;
+						break;
+					}
+				}
+			} else {
+				// the array is full
+				// take the least score one
+				for (int i = 0; i < candidates.length; i++) {
+					if (candidates[i].getScore() == minScore) {
+						candidates[i] = le;
+						break;
+					}
+				}
+			}
+
+			// update the min score
+			minScore = Double.MAX_VALUE;
+			for (int i = 0; i < candidates.length; i++) {
+				if (candidates[i] != null
+						&& candidates[i].getScore() < minScore) {
+					minScore = candidates[i].getScore();
+				}
+			}
 		}
 	}
 
@@ -57,60 +94,16 @@ public class CandidatesPlus {
 	}
 
 	public int size() {
-		return candidates.size();
+		return candidates.length;
 	}
 
-	/**
-	 * run through the list to remove dominated cands
-	 */
-	public void clean() {
-		Collections.sort(candidates);
-		LeafEntry[] temp = candidates.toArray(new LeafEntry[0]);
-		for (int i = 0; i < temp.length; i++) {
-			boolean domed = false;
-			for (int j = i + 1; j < temp.length; j++) {
-				if (LeafEntry.dominates(temp[j], temp[i])) {
-					domed = true;
-					break;
-				}
-			}
-			if (domed) {
-				temp[i] = null;
-			}
-		}
-		List<LeafEntry> cands = new ArrayList<LeafEntry>(temp.length);
-		for (LeafEntry le : temp) {
-			if (le != null) {
-				cands.add(le);
-			}
-		}
-		this.candidates = cands;
-	}
-
-	/**
-	 * sort the entries based on scores
-	 */
-	public void sortOnScore() {
-		Collections.sort(candidates);
-	}
-
-	public void sort() {
-		Collections.sort(candidates);
+	public List<LeafEntry> getList() {
+		List list = new ArrayList(Arrays.asList(candidates));
+		return list;
 	}
 
 	public List<LeafEntry> getTopK(int k) {
-		if(this.candidates.size() <=k)
-			return candidates;
-		else
-		{
-			List<LeafEntry> entries = new ArrayList<LeafEntry>();
-			int i=0;
-			while(i<k){
-				entries.add(this.candidates.get(i));
-				i++;
-			}
-			return entries;
-		}
+		List list = new ArrayList(Arrays.asList(candidates));
+		return list;
 	}
-
 }

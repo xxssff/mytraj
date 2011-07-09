@@ -25,26 +25,26 @@ public class TestClusterEvoleTable {
 		LocalDateTime ldt = new LocalDateTime(Global.infati_MAXTIME);
 		
 		//At midnight, cluster <1, 2, 3, 4> forms  
-		LeafEntry le1 = new LeafEntry(a1, ldt, 1);
+		LeafEntry le1 = new LeafEntry(a1, ldt);
 		
 		//At time 00:01:00, object 5 joins cluster <1, 2, 3, 4> 
-		le1.endCluster(ldt.plusMinutes(1), 1, 0.5, 0.5, 1);
+		le1.endCluster(ldt.plusMinutes(1), 1, 0.5);
 		cet.add(cid, le1);
-		LeafEntry le2 = new LeafEntry(a2, ldt.plusMinutes(1), 1);
+		LeafEntry le2 = new LeafEntry(a2, ldt.plusMinutes(1));
 		
 		//At time 00:02:00, object 3 leaves cluster <1, 2, 3, 4, 5> 
-		le2.endCluster(ldt.plusMinutes(2), 1, 0.5, 0.5, 1);
+		le2.endCluster(ldt.plusMinutes(2), 1, 0.5);
 		cet.add(cid, le2);
-		LeafEntry le3 = new LeafEntry(a3, ldt.plusMinutes(2), 1);
+		LeafEntry le3 = new LeafEntry(a3, ldt.plusMinutes(2));
 		
 		//At time 00:03:00, object 4 leaves cluster <1, 2, 4, 5> 
-		le3.endCluster(ldt.plusMinutes(3), 1, 0.5, 0.5, 1);
+		le3.endCluster(ldt.plusMinutes(3), 1, 0.5);
 		cet.add(cid,  le3);
-		LeafEntry le4 = new LeafEntry(a4, ldt.plusMinutes(3), 1);
+		LeafEntry le4 = new LeafEntry(a4, ldt.plusMinutes(3));
 		
 		//At time 00:04:00, cluster 10 expires
 		cet.add(cid, le4);
-		le4.endCluster(ldt.plusMinutes(4), 1, 0.5, 0.5, 1);
+		le4.endCluster(ldt.plusMinutes(4), 1, 0.5);
 		
 		System.out.println("before cascading...");
 		System.out.println(cet.toString());

@@ -87,7 +87,7 @@ public class NumTrie {
 		}
 		// create new leaf node
 		pNode.isLeaf = true;
-		pNode.entry = new LeafEntry(intArr, currTime, avgDist);
+		pNode.entry = new LeafEntry(intArr, currTime);
 		this.numPaths++;
 	}
 
