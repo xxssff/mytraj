@@ -25,16 +25,20 @@ public class LeafEntry implements Comparable {
 	double alpha, beta;
 	double duration;
 	double score;
+	public boolean dominated;
+
 	static DecimalFormat formatter = new DecimalFormat("#.###");
 
 	public LeafEntry(Integer[] members, LocalDateTime currTime) {
 		this.ts = currTime;
 		this.subCluster = members;
+		dominated = false;
 	}
 
 	public LeafEntry(Set<Integer> members, LocalDateTime currTime) {
 		subCluster = members.toArray(new Integer[0]);
 		this.ts = currTime;
+		dominated = false;
 	}
 
 	@Override
@@ -59,10 +63,10 @@ public class LeafEntry implements Comparable {
 		if (le1.getScore() < le2.getScore()) {
 			return false;
 		}
-		List<Integer> mem1 = new ArrayList<Integer>(
-				Arrays.asList(le1.subCluster));
-		List<Integer> mem2 = new ArrayList<Integer>(
-				Arrays.asList(le2.subCluster));
+		List<Integer> mem1 = new ArrayList<Integer>(Arrays
+				.asList(le1.subCluster));
+		List<Integer> mem2 = new ArrayList<Integer>(Arrays
+				.asList(le2.subCluster));
 		boolean sub = CollectionUtils.isSubCollection(mem2, mem1);
 		return sub;
 
@@ -146,4 +150,33 @@ public class LeafEntry implements Comparable {
 		}
 		this.score = alpha * size() + beta * duration;
 	}
+
+	/**
+	 * 
+	 * @param le
+	 * @param theta
+	 * @return true if the sim is large than theta
+	 */
+	public boolean isSimilar(LeafEntry le, double theta) {
+		double val = getSimilarity(le);
+		return (val > theta) ? true : false;
+	}
+
+	/**
+	 * 
+	 * @param le
+	 * @return similarity between this and le
+	 */
+	public double getSimilarity(LeafEntry le) {
+		List<Integer> mem1 = new ArrayList<Integer>(Arrays
+				.asList(this.subCluster));
+		List<Integer> mem2 = new ArrayList<Integer>(Arrays
+				.asList(le.subCluster));
+		int i1 = CollectionUtils.intersection(mem2, mem1).size();
+		int i2 = CollectionUtils.union(mem2, mem1).size();
+		double val = (double) i1 / (double) i2;
+
+		return val;
+	}
+
 }

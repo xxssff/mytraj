@@ -24,9 +24,9 @@ public class Database {
     Connection conn;
 
     public Database() {
-        String dburl = "jdbc:postgresql://10.11.93.180:5432/routes";
+        String dburl = "jdbc:postgresql://localhost:5432/routes";
         String dbuser = "postgres";
-        String dbpass = "nenoriu";
+        String dbpass = "BEcomno1";
 
         try {
             System.out.println("Creating JDBC connection...");

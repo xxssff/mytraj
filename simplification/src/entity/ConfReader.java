@@ -28,6 +28,7 @@ public class ConfReader {
 		conf.put("minPts", br.readLine());
 		conf.put("tau", br.readLine());
 		conf.put("k", br.readLine());
+		conf.put("theta", br.readLine());
 		StringTokenizer st = new StringTokenizer(br.readLine(), " ");
 		if (st.countTokens() != 3) {
 			throw new WrongConfException(
