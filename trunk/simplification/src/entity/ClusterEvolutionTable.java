@@ -73,8 +73,8 @@ public class ClusterEvolutionTable {
 					enArr[i].updateScore();
 				} else {
 					// new entry in the table
-					LeafEntry le_new = new LeafEntry(
-							memSet.toArray(new Integer[0]), enArr[i].ts);
+					LeafEntry le_new = new LeafEntry(memSet
+							.toArray(new Integer[0]), enArr[i].ts);
 					le_new.endCluster(le.te, le.getAlpha(), le.getBeta());
 					entries.add(le_new);
 				}
@@ -192,12 +192,12 @@ public class ClusterEvolutionTable {
 	// bw.newLine();
 	// }
 
-	public void pushIntoCands(CandidatesPlus cands, int tau) {
+	public void pushIntoCands(CandidatesPlus cands, int tau, double theta) {
 		for (Integer key : table.keySet()) {
 			List<LeafEntry> list = table.get(key);
 			for (LeafEntry le : list) {
 				if (le.getDuration() >= tau) {
-					cands.add(le);
+					cands.add(le, theta);
 				}
 			}
 
@@ -212,14 +212,15 @@ public class ClusterEvolutionTable {
 		return sum;
 	}
 
-	public List<LeafEntry> pushIntoCands(CandidatesPlus cands, int tau, int k) {
-		pushIntoCands(cands, tau);
-		return cands.getTopK(k);
+	public List<LeafEntry> pushIntoCands(CandidatesPlus cands, int tau, int k,
+			double theta) {
+		pushIntoCands(cands, tau, theta);
+		return cands.getTopK();
 	}
 
 	/**
-	 * pre-cond: the cet table is not cascaded yet TODO it is wrong to have
-	 * hashmap and key
+	 * pre-cond: the cet table is not cascaded yet<br>
+	 * TODO it is wrong to have hashmap and key
 	 * 
 	 * @param cands
 	 * @param tau
@@ -227,7 +228,8 @@ public class ClusterEvolutionTable {
 	 * @return
 	 */
 	public static List<LeafEntry> pushIntoCandsUB(ClusterEvolutionTable cet,
-			CandidatesPlus cands, int tau, int k, double alpha, double beta) {
+			CandidatesPlus cands, int tau, int k, double alpha, double beta,
+			double theta) {
 		int counter = 0;
 		for (int key : cet.table.keySet()) {
 			// add into res directly
@@ -239,7 +241,7 @@ public class ClusterEvolutionTable {
 
 			for (LeafEntry le : entries) {
 				if (le.getDuration() >= tau) {
-					cands.add(le);
+					cands.add(le, theta);
 				}
 			}
 			if (counter >= k) {
@@ -265,13 +267,13 @@ public class ClusterEvolutionTable {
 				for (LeafEntry le : entries) {
 					if (le.getDuration() >= tau
 							&& le.getScore() > cands.minScore) {
-						cands.add(le);
+						cands.add(le, theta);
 					}
 				}
 			}
 
 		}
-		return cands.getList();
+		return cands.getCandidateList();
 	}
 
 	private double getUpperBound(List<LeafEntry> entries, double alpha,

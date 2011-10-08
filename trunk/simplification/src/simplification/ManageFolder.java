@@ -45,7 +45,7 @@ public class ManageFolder {
 //        }
 //        testFunc();
 //        test();
-        testFunc_1();
+//        testFunc_1();
     }
 
     public void prehandleFiles(String fileUrl, String fName) {
@@ -145,18 +145,18 @@ public class ManageFolder {
         }
     }
 
-    private void testFunc_1() {
-        Coordinate[] list = testArrCoor();
-
-        System.out.println(list.length);
-
-        DouglasPeuckerLineSimplifier simpl = new DouglasPeuckerLineSimplifier(list);
-        simpl.setDistanceTolerance(1.5);
-        Coordinate[] listRes = simpl.simplify();
-        for (int i = 0; i < listRes.length; i++) {
-            System.out.println(listRes[i].x + " " + listRes[i].y + " " + listRes[i].toString());
-        }
-    }
+//    private void testFunc_1() {
+//        Coordinate[] list = testArrCoor();
+//
+//        System.out.println(list.length);
+//
+//        DouglasPeuckerLineSimplifier simpl = new DouglasPeuckerLineSimplifier(list);
+//        simpl.setDistanceTolerance(1.5);
+//        Coordinate[] listRes = simpl.simplify();
+//        for (int i = 0; i < listRes.length; i++) {
+//            System.out.println(listRes[i].x + " " + listRes[i].y + " " + listRes[i].toString());
+//        }
+//    }
 
     private void testFunc() {
         fixes = testArray();

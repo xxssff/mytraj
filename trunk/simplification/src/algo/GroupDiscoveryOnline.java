@@ -1,6 +1,8 @@
 package algo;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,12 +12,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.TreeSet;
 
 import org.joda.time.LocalDateTime;
 import org.joda.time.Seconds;
 
 import trie.LeafEntry;
+import trie.NumTrie;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
@@ -35,12 +39,12 @@ import entity.Statistics;
  * 
  * 
  * 2011-04-24: finish groupDiscoveryPlus + clusterEvolveTable <br>
- * 2011-05-24: TODO expand search and compare topK result
+ * 2011-05-24: expand search and compare topK result
  * 
  * @author xiaohui
  * 
  */
-public class GroupDiscoveryPlus {
+public class GroupDiscoveryOnline {
 	// containers
 	// map id to movingObjects
 	static HashMap<Integer, MovingObject> allObjs = new HashMap<Integer, MovingObject>();
@@ -62,7 +66,6 @@ public class GroupDiscoveryPlus {
 	static int minPts = 5;
 	static int tau = 10; // seconds
 	static int k = 10;
-	static double theta = 0.3;
 	static ClusterEvolutionTable cet;
 	/**
 	 * Test parameters
@@ -87,6 +90,7 @@ public class GroupDiscoveryPlus {
 	static double alpha = 1;
 	static double beta = 1;
 	static double gamma = 1;
+	static double theta = 0.3;
 
 	/**
 	 * cluster the moving objects in U
@@ -145,62 +149,19 @@ public class GroupDiscoveryPlus {
 		}
 	}
 
-	/**
-	 * 
-	 * 
-	 * @param hm
-	 * @return list of new objects; two types of events are added: UPDATE and
-	 *         DISAPP
-	 */
-	private static ArrayList<Integer> HmUpdateEventQNewData() {
-		ArrayList<Integer> res = new ArrayList<Integer>();
-
-		stats.numMos = hm.size();
-
-		int totalPoints = 0;
-		// i is routeid
-		for (Integer i : hm.keySet()) {
-			if (allObjs.get(i) == null) {
-				// new comers
-				res.add(i);
-			}
-			ArrayList<DataPoint> dps = hm.get(i);
-			totalPoints += dps.size();
-
-			if (dps != null) {
-				// insert into eventQ
-				for (DataPoint dp : dps) {
-					if (Math.abs(dp.vx) == 0 && Math.abs(dp.vy) == 0
-							&& dp.time0 == dps.get(dps.size() - 1).time0) {
-						MyEvent e = new MyEvent(dp.dateTime, dp.routeId, -1,
-								EventType.DISAPPEAR);
-						eventQ.add(e);
-					} else {
-						MyEvent e = new MyEvent(dp.dateTime, dp.routeId, -1,
-								EventType.UPDATE);
-						eventQ.add(e);
-					}
-				}
-			}
-		}
-
-		stats.numDataPoints = totalPoints;
-		return res;
-	}
-
 	public static void main(String[] args) throws Exception {
 		/**
 		 * Get parameters from conf file
 		 * 
 		 */
 		System.out
-				.println("===============Group Discovery Plus==================");
+				.println("===============Group Discovery Plus Online UB==================");
 		ConfReader reader = new ConfReader();
 		HashMap<String, String> conf = reader.read(args[0]);
 
 		BufferedWriter bw = new BufferedWriter(new FileWriter(conf
 				.get("outFile")));
-		bw.write("Group Discovery Plus Output=====");
+		bw.write("Group Discovery Plus OnlineUB Output=====");
 		bw.newLine();
 
 		eps = Integer.parseInt(conf.get("eps"));
@@ -217,8 +178,9 @@ public class GroupDiscoveryPlus {
 		System.out.println("e:" + eps + "\t" + "m:" + minPts + "\t" + "tau:"
 				+ tau + "\tk:" + k);
 
-		cands = new CandidatesPlus(k, stats);
 		stats = new Statistics();
+		cands = new CandidatesPlus(k, stats);
+
 		cet = new ClusterEvolutionTable(minPts);
 
 		String ts = conf.get("ts");
@@ -227,7 +189,10 @@ public class GroupDiscoveryPlus {
 		systemMaxTime = new LocalDateTime(te);
 		currTime = systemMinTime;
 
-		long ldt1 = System.currentTimeMillis();
+		LocalDateTime ldts = new LocalDateTime(ts);
+		LocalDateTime ldte = new LocalDateTime(te);
+		LocalDateTime baseTime = ldts;
+		int interval = 6;
 
 		if (systemTable.contains("elk")) {
 			hm = dataSource.getDefinedTrajectories(systemTable, ts, te, 1);
@@ -236,31 +201,36 @@ public class GroupDiscoveryPlus {
 			hm = dataSource.getDefinedTrajectories(systemTable, ts, te, 0);
 		}
 
-		long ldt2 = System.currentTimeMillis();
-		stats.loadDataTime = (ldt2 - ldt1) / 1000.0;
+		// modify search range
+		eps += 2 * tolerance;
 
 		long t_start = System.currentTimeMillis();
-		System.out.println("Continuous clustering...");
-		doGroupDiscovery(tolerance, ts, te, bw);
+		System.out.println("Continuous Cluster...");
+		while (baseTime.isBefore(ldte)) {
+			System.out.println(baseTime.toString());
+			doGroupDiscovery(baseTime, baseTime.plusHours(interval), bw);
+			baseTime = baseTime.plusHours(interval);
+		}
 		long t1 = System.currentTimeMillis();
-		System.out.println("CC Time(s): " + (t1 - t_start) / 1000.0);
+		System.out.println("CC time(s): " + (t1 - t_start) / 1000.0);
+
+		System.out.println("Handling History...");
 
 		// examine entries in cet
-		System.out.println("Handling histories...");
 		cet.cascadeAction();
 		stats.numCandidates = cet.getTotalSize();
+
+		System.out.println("Taking candidates...");
 		// cet.pushIntoCands(cands, tau);
 		List<LeafEntry> resultEntries = cet.pushIntoCands(cands, tau, k, theta);
+		// sort list
 		Collections.sort(resultEntries);
 		for (LeafEntry le : resultEntries) {
 			bw.write(le.toString());
 			bw.newLine();
 		}
 		long t_end = System.currentTimeMillis();
-		System.out.println("HH time(s): " + (t_end - ldt1) / 1000.0);
-
-		// close database connection
-		dataSource.closeConnection();
+		System.out.println("HH time(s): " + (t_end - t1) / 1000.0);
 
 		// write candidates into result file
 		stats.startTime = conf.get("ts");
@@ -278,28 +248,19 @@ public class GroupDiscoveryPlus {
 		bw.newLine();
 
 		stats.toFile(bw);
-		cands.toFile(bw);
 
 		bw.close();
+		dataSource.closeConnection();
 	}
 
-	public static void doGroupDiscovery(int tolerance, String startTime,
-			String endTime, BufferedWriter bw) throws Exception {
+	public static void doGroupDiscovery(LocalDateTime baseTime,
+			LocalDateTime thisEnd, BufferedWriter bw) throws Exception {
 		/**
 		 * 1. fill up containers <br>
 		 * 2. update base time <br>
 		 */
-		// initial run
-		// enlarge range search according to lemma
-		eps += 2 * tolerance;
+		HmUpdateEventQNewData(baseTime, thisEnd);
 
-		// start of the tracing
-		// no need to do cluster after filling up
-		// because subsequent update event takes care of
-		// sync and cluster.
-		HmUpdateEventQNewData();
-
-		// System.out.println();
 		// System.out.println("After init:");
 		// System.out.println("HM size: " + hm.size());
 		// System.out.println("eventQ size: " + eventQ.size());
@@ -308,10 +269,6 @@ public class GroupDiscoveryPlus {
 
 		// process these events
 		while (!eventQ.isEmpty()) {
-			// test memory usage
-			// System.gc();
-			// System.gc();
-			// System.gc();
 			long mem1 = Runtime.getRuntime().totalMemory()
 					- Runtime.getRuntime().freeMemory();
 			if (mem1 > stats.memUsage) {
@@ -320,10 +277,25 @@ public class GroupDiscoveryPlus {
 
 			// process events
 			MyEvent evt = eventQ.poll();
+			// System.out.println("curr Time: " + currTime);
+			// System.out.println(evt.toString());
+
 			// move time to event time
+			if (evt.time.isAfter(thisEnd)) {
+				break;
+			}
+
 			if (evt.time.isAfter(currTime)) {
 				currTime = evt.time;
 			}
+
+			// LocalDateTime t = new LocalDateTime("2001-03-27T06:15:00");
+			// LocalDateTime ta = new LocalDateTime("2001-03-27T06:00:00");
+			// if(currTime.isBefore(t) && currTime.isAfter(ta)){
+			// System.out.println("curr Time: " + currTime);
+			// System.out.println(evt.toString());
+			//
+			// }
 
 			if (currTime.isAfter(systemMaxTime)) {
 				// stop the process
@@ -368,11 +340,13 @@ public class GroupDiscoveryPlus {
 						mo = allObjs.get(evt.OID);
 					}
 
-					// if (mo.cid > 0 && CS.get(mo.cid)!=null) {
-					if (mo.cid > 0) {
+					if (mo.cid > 0 && CS.get(mo.cid) != null) {
 						// mo belongs to a cluster
 						// update the cluster of mo
 						Cluster cluster = CS.get(mo.cid);
+						if (cluster.members == null) {
+							continue;
+						}
 						int n1 = cluster.members.size();
 						handleUpdateInCluster(mo, cluster, U);
 						int n2 = cluster.members.size();
@@ -385,7 +359,6 @@ public class GroupDiscoveryPlus {
 							LeafEntry le1 = new LeafEntry(cluster.members,
 									currTime);
 							list.add(le1);
-
 						}
 
 					} else {
@@ -437,33 +410,43 @@ public class GroupDiscoveryPlus {
 					}
 				}
 
-				// handle candidate list
-				// System.out.println("After event:");
-				// printMutalDistance();
-				// printCluster();
-				// if(!CS.isEmpty()){
-				// System.exit(0);
-				// }
-
-				// if(evt.OID==87812 && evt.type==EventType.EXPIRE){
-				// System.exit(0);
-				// }
-
-				// printEventQ();
-				// printTrie();
-				// printR();
 			}
 		}// end while eventQ!=empty
 
-		// If there are still clusters in CS
-		// terminate them
-		// if (CS != null && CS.size() != 0) {
-		// for (Integer key : CS.keySet()) {
-		// List<LeafEntry> list = cet.get(key);
-		// list.get(list.size() - 1).endCluster(currTime,
-		// CS.get(key).getAvgDist(allObjs), alpha, beta, gamma);
-		// }
-		// }
+	}
+
+	/**
+	 * Take data segment from startTime to endTime
+	 * 
+	 * @param startTime
+	 * @param endTime
+	 */
+	private static void HmUpdateEventQNewData(LocalDateTime startTime,
+			LocalDateTime endTime) {
+		// i is routeid
+		for (Integer i : hm.keySet()) {
+			ArrayList<DataPoint> dps = hm.get(i);
+			if (dps != null) {
+				// insert into eventQ
+				for (DataPoint dp : dps) {
+					if (dp.dateTime.isAfter(startTime)
+							&& dp.dateTime.isBefore(endTime)) {
+						if (Math.abs(dp.vx) == 0 && Math.abs(dp.vy) == 0) {
+							MyEvent e = new MyEvent(dp.dateTime, dp.routeId,
+									-1, EventType.DISAPPEAR);
+							eventQ.add(e);
+						} else {
+							MyEvent e = new MyEvent(dp.dateTime, dp.routeId,
+									-1, EventType.UPDATE);
+							eventQ.add(e);
+						}
+					}
+					if (dp.dateTime.isAfter(endTime)) {
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	/**
@@ -733,9 +716,6 @@ public class GroupDiscoveryPlus {
 	 */
 	private static void handleDisappear(MovingObject mo) throws Exception {
 		if (mo.cid > 0) {
-			// System.out.println(CS);
-			// System.out.println(CS.isEmpty());
-
 			Cluster cluster = CS.get(mo.cid);
 			if (cluster == null) {
 				return;
@@ -763,6 +743,7 @@ public class GroupDiscoveryPlus {
 		}
 		OBJ.remove(mo);
 		allObjs.remove(mo);
+
 	}
 
 	static void removeFromEventQ(int moid, int cid, EventType type) {
@@ -774,6 +755,12 @@ public class GroupDiscoveryPlus {
 			if (evt.OID == moid && evt.CID == cid && type == EventType.EXIT) {
 				indexEvt = evt;
 				found = true;
+
+				// if(evt.CID == 190 && evt.OID==91){
+				// printEventQ();
+				// System.exit(0);
+				// }
+
 				break;
 			}
 		}
@@ -932,6 +919,7 @@ public class GroupDiscoveryPlus {
 			mo = allObjs.get(i);
 			Cluster cluster = CS.get(mo.cid);
 			ArrayList<MovingObject> L = DBScan.rangeQuery(mo, OBJ, eps);
+			// System.out.println("i L: " + i + " " + L);
 			if (L.size() >= minPts) {
 				L.remove(mo);
 				mo.label = true;
@@ -946,6 +934,11 @@ public class GroupDiscoveryPlus {
 			}
 
 		}
+		// if (currTime.equals(new LocalDateTime("22:49:50"))) {
+		// System.out.println("G:" + G);
+		// printCluster();
+		// System.exit(0);
+		// }
 
 		if (u.size() >= minPts) {
 			ClusterObjects(u);

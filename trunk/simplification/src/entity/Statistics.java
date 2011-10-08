@@ -14,6 +14,9 @@ public class Statistics {
 	public double loadDataTime = 0;
 	public int numCandidates = 0;
 	public long memUsage = 0;
+	public int numPrunedCandBySim = 0;
+	public double avgSimilarity = 0;
+	public int numPrunedByDomination = 0;
 
 	public void toFile(BufferedWriter bw) throws Exception {
 		// bw.write("start time: " + startTime);
@@ -30,10 +33,16 @@ public class Statistics {
 		bw.newLine();
 		bw.write("Num Checked Candidates: " + numCandidates);
 		bw.newLine();
-
+		bw.write("Num Pruned By Dominated: " + numPrunedByDomination);
+		bw.newLine();
+		bw.write("Num Pruned Candidates by Similarity: " + numPrunedCandBySim);
+		bw.newLine();
+		
 		bw.write("Loading Data Time: " + loadDataTime);
 		bw.newLine();
 		bw.write("Elapsed Time: " + elapsedTime);
+		bw.newLine();
+		bw.write("Average similarity among topK: " + avgSimilarity);
 		bw.newLine();
 		bw.write("Max Mem Usage: " + memUsage / 1024.0 / 1024.0 + "MBybtes");
 		bw.newLine();
